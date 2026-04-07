@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- Page Header -->
+<div class="page-header">
+    <div class="container">
+        <h2>Contact Us</h2>
+        <p>We'd love to hear from you</p>
+        <div class="breadcrumb">
+            <a href="{{ url_for('index') }}">Home</a>
+            <i class="fas fa-chevron-right" style="font-size:0.7rem;"></i>
+            <span>Contact</span>
+        </div>
+    </div>
+</div>
+
+<section class="section">
+    <div class="container">
+        <div class="contact-grid">
+            <!-- Contact Information -->
+            <div>
+                <h2 style="font-size:1.8rem; margin-bottom:10px;">Get in Touch</h2>
+                <p style="color:var(--gray); margin-bottom:30px;">Have questions about our products? Need help with an order? We're here to help!</p>
+
+                <div class="contact-info-card">
+                    <div class="icon"><i class="fas fa-map-marker-alt"></i></div>
+                    <div>
+                        <h4>Our Address</h4>
+                        <p>{{ site_address }}</p>
+                    </div>
+                </div>
+
+                <div class="contact-info-card">
+                    <div class="icon"><i class="fas fa-phone-alt"></i></div>
+                    <div>
+                        <h4>Phone</h4>
+                        <p>{{ site_phone }}</p>
+                    </div>
+                </div>
+
+                <div class="contact-info-card">
+                    <div class="icon"><i class="fas fa-envelope"></i></div>
+                    <div>
+                        <h4>Email</h4>
+                        <p>{{ site_email }}</p>
+                    </div>
+                </div>
+
+                <div class="contact-info-card">
+                    <div class="icon" style="background:#25D366;"><i class="fab fa-whatsapp"></i></div>
+                    <div>
+                        <h4>WhatsApp</h4>
+                        <p><a href="https://wa.me/{{ whatsapp_number }}" target="_blank" style="color:var(--primary);">Chat with us on WhatsApp</a></p>
+                    </div>
+                </div>
+
+                <div class="contact-info-card" style="display:block;">
+                    <h4 style="margin-bottom:10px;">Find Us on Map</h4>
+                    <a
+                        href="https://www.google.com/maps/search/?api=1&query={{ site_address|urlencode }}"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="btn btn-primary"
+                        style="margin-bottom:12px;"
+                    >
+                        <i class="fas fa-map-marked-alt"></i> Open in Google Maps
+                    </a>
+                    <iframe
+                        title="Akhgam Herbals location"
+                        src="https://www.google.com/maps?q={{ site_address|urlencode }}&output=embed"
+                        width="100%"
+                        height="260"
+                        style="border:0; border-radius:12px;"
+                        loading="lazy"
+                        referrerpolicy="no-referrer-when-downgrade"
+                    ></iframe>
+                </div>
+
+                <!-- Social Links -->
+                <div style="margin-top:20px;">
+                    <h4 style="margin-bottom:15px;">Follow Us</h4>
+                    <div class="footer-social">
+                        <a href="#"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#"><i class="fab fa-instagram"></i></a>
+                        <a href="#"><i class="fab fa-twitter"></i></a>
+                        <a href="#"><i class="fab fa-youtube"></i></a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contact Form -->
+            <div>
+                <div class="form-container" style="max-width:100%; box-shadow:none; border:1px solid var(--gray-lighter);">
+                    <h2 style="font-size:1.5rem;">Send us a Message</h2>
+                    <p class="form-subtitle">We'll get back to you within 24 hours</p>
+
+                    {% if success %}
+                        <div class="alert alert-success"><i class="fas fa-check-circle"></i> {{ success }}</div>
+                    {% endif %}
+                    {% if error %}
+                        <div class="alert alert-error"><i class="fas fa-exclamation-circle"></i> {{ error }}</div>
+                    {% endif %}
+
+                    <form method="POST" data-validate>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Your Name *</label>
+                                <input type="text" name="name" placeholder="Enter your name" required value="{{ form_data.get('name', '') }}">
+                            </div>
+                            <div class="form-group">
+                                <label>Email Address *</label>
+                                <input type="email" name="email" placeholder="Enter your email" required value="{{ form_data.get('email', '') }}">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Phone Number</label>
+                                <input type="tel" name="phone" placeholder="Enter your phone" value="{{ form_data.get('phone', '') }}">
+                            </div>
+                            <div class="form-group">
+                                <label>Subject</label>
+                                <input type="text" name="subject" placeholder="What's this about?" value="{{ form_data.get('subject', '') }}">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Your Message *</label>
+                            <textarea name="message" placeholder="Write your message here..." required>{{ form_data.get('message', '') }}</textarea>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-paper-plane"></i> Send Message
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% endblock %}

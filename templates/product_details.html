@@ -1,0 +1,528 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- Page Header -->
+<div class="page-header" style="padding: 30px 0;">
+    <div class="container">
+        <div class="breadcrumb">
+            <a href="{{ url_for('index') }}">Home</a>
+            <i class="fas fa-chevron-right" style="font-size:0.7rem;"></i>
+            <a href="{{ url_for('products') }}">Products</a>
+            <i class="fas fa-chevron-right" style="font-size:0.7rem;"></i>
+            <a href="{{ url_for('products', category=product.category) }}">{{ product.category }}</a>
+            <i class="fas fa-chevron-right" style="font-size:0.7rem;"></i>
+            <span>{{ product.name }}</span>
+        </div>
+    </div>
+</div>
+
+<!-- Product Detail -->
+<section class="product-detail-section">
+    <div class="container">
+        <div class="product-detail-grid">
+            <!-- Product Media Gallery -->
+            <div class="product-gallery">
+                <!-- Main Display -->
+                <div class="gallery-main" id="galleryMain">
+                    {% if product.image and product.image != 'default.jpg' %}
+                        <img id="mainMedia" src="{{ url_for('static', filename='uploads/products/' + product.image) }}" alt="{{ product.name }}">
+                    {% elif product_media and product_media|length > 0 %}
+                        {% if product_media[0].media_type == 'video' %}
+                            <video id="mainMedia" src="{{ url_for('static', filename='uploads/products/' + product_media[0].filename) }}" controls class="gallery-video"></video>
+                        {% else %}
+                            <img id="mainMedia" src="{{ url_for('static', filename='uploads/products/' + product_media[0].filename) }}" alt="{{ product.name }}">
+                        {% endif %}
+                    {% else %}
+                        <div class="no-image" style="height:100%; min-height:400px;">
+                            <i class="fas fa-leaf" style="font-size:5rem;"></i>
+                            <span style="font-size:1.2rem; margin-top:15px;">{{ product.name }}</span>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Thumbnails -->
+                {% set has_media = (product.image and product.image != 'default.jpg') or (product_media and product_media|length > 0) %}
+                {% if has_media and ((product.image and product.image != 'default.jpg' and product_media and product_media|length > 0) or (product_media and product_media|length > 1)) %}
+                <div class="gallery-thumbnails">
+                    {% if product.image and product.image != 'default.jpg' %}
+                    <div class="gallery-thumb active" data-media-type="image" data-media-src="{{ url_for('static', filename='uploads/products/' + product.image) }}">
+                        <img src="{{ url_for('static', filename='uploads/products/' + product.image) }}" alt="Main">
+                    </div>
+                    {% endif %}
+                    {% for media in product_media %}
+                    <div class="gallery-thumb {% if loop.first and (not product.image or product.image == 'default.jpg') %}active{% endif %}"
+                         data-media-type="{{ media.media_type }}"
+                         data-media-src="{{ url_for('static', filename='uploads/products/' + media.filename) }}">
+                        {% if media.media_type == 'video' %}
+                            <video src="{{ url_for('static', filename='uploads/products/' + media.filename) }}" muted preload="metadata"></video>
+                            <div class="thumb-play-icon"><i class="fas fa-play"></i></div>
+                        {% else %}
+                            <img src="{{ url_for('static', filename='uploads/products/' + media.filename) }}" alt="">
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Product Info -->
+            <div class="product-detail-info">
+                <span class="product-category" style="font-size:0.8rem; margin-bottom:15px;">{{ product.category }}</span>
+                <h1>{{ product.name }}</h1>
+
+                <!-- Meta -->
+                <div class="product-meta">
+                    {% if product.rating > 0 %}
+                        <div class="rating">
+                            {{ generate_stars(product.rating)|safe }}
+                        </div>
+                        <span class="reviews">{{ product.rating }} ({{ product.reviews_count }} reviews)</span>
+                    {% endif %}
+                   
+                    {% if product.featured %}
+                        <span class="badge-featured" style="display:inline-block;">FEATURED</span>
+                    {% endif %}
+                </div>
+                <div class="product-meta">
+                    <span class="sold-count"><i class="fas fa-box"></i> {{ sold_count }} sold</span>
+                </div>
+                <!-- Price -->
+                <div class="price-block">
+                    
+                    <span class="current">₹{{ product.price|number_format }}</span>
+                    {% if product.original_price %}
+                        <span class="original">₹{{ product.original_price|number_format }}</span>
+                        <span class="discount">{{ discount_pct }}% OFF</span>
+                    {% endif %}
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="action-buttons">
+                    <form method="POST" action="{{ url_for('add_to_cart') }}" class="add-to-cart-form">
+                        <input type="hidden" name="product_id" value="{{ product.id }}">
+                        <div style="display:flex; align-items:center; border:1px solid #ddd; border-radius:8px; overflow:hidden;">
+                            <button type="button" class="qty-btn" onclick="changeQty(-1)" style="padding:10px 14px; background:#f5f5f5; border:none; cursor:pointer; font-size:1rem;">-</button>
+                            <input type="number" name="quantity" id="qtyInput" value="1" min="1" max="10" style="width:50px; text-align:center; border:none; font-size:1rem; padding:10px 0;">
+                            <button type="button" class="qty-btn" onclick="changeQty(1)" style="padding:10px 14px; background:#f5f5f5; border:none; cursor:pointer; font-size:1rem;">+</button>
+                        </div>
+                        <button type="submit" name="buy_now" value="1" class="btn btn-accent btn-lg">
+                            <i class="fas fa-bolt"></i> Buy Now
+                        </button>
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-cart-plus"></i> Add to Cart
+                        </button>
+                    </form>
+                    <a href="{{ url_for('products') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to Products
+                    </a>
+                </div>
+                <script>function changeQty(d){var i=document.getElementById('qtyInput');var v=parseInt(i.value)+d;if(v>=1&&v<=10)i.value=v;}</script>
+
+                <!-- Benefits -->
+                {% if benefits %}
+                    <div class="benefits-list">
+                        <h4>Key Benefits</h4>
+                        <ul>
+                            {% for benefit in benefits %}
+                                <li><i class="fas fa-check-circle"></i> {{ benefit }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+
+                <!-- Description -->
+                {% if product.description %}
+                    <div class="description">
+                        <h4 style="font-family: var(--font-body); font-weight:700; margin-bottom:10px; color:#333;">Description</h4>
+                        <p>{{ product.description }}</p>
+                    </div>
+                {% endif %}
+
+                <!-- Trust Badges -->
+                <div style="margin-top:30px; display:flex; gap:25px; flex-wrap:wrap;">
+                    <div style="display:flex; align-items:center; gap:8px; font-size:0.85rem; color:#666;">
+                        <i class="fas fa-shield-alt" style="color:var(--primary);"></i> 100% Genuine
+                    </div>
+                    <div style="display:flex; align-items:center; gap:8px; font-size:0.85rem; color:#666;">
+                        <i class="fas fa-leaf" style="color:var(--primary);"></i> Natural Ingredients
+                    </div>
+                    <div style="display:flex; align-items:center; gap:8px; font-size:0.85rem; color:#666;">
+                        <i class="fas fa-truck" style="color:var(--primary);"></i> Free Delivery 300+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Related Products -->
+{% if related %}
+<section class="section section-light">
+    <div class="container">
+        <div class="section-header">
+            <h2><em>You May Also Like</em></h2>
+            <p>Products from the same category</p>
+        </div>
+
+        <div class="products-grid related-products-grid">
+            {% for rel in related %}
+                {% set rel_savings = (rel.original_price - rel.price)|round|int if rel.original_price else 0 %}
+                <div class="product-card">
+                    {% if rel_savings > 0 %}
+                        <div class="product-badge">
+                            <span class="badge-save">Save ₹{{ rel_savings }}</span>
+                        </div>
+                    {% endif %}
+                    <div class="product-img">
+                        <a href="{{ url_for('product_details', product_id=rel.id) }}">
+                            {% if rel.image and rel.image != 'default.jpg' %}
+                                <img src="{{ url_for('static', filename='uploads/products/' + rel.image) }}" alt="{{ rel.name }}">
+                            {% else %}
+                                <div class="no-image">
+                                    <i class="fas fa-leaf"></i>
+                                    <span>{{ rel.name }}</span>
+                                </div>
+                            {% endif %}
+                        </a>
+                        {% if is_logged_in %}
+                            <button class="wishlist-btn" data-product-id="{{ rel.id }}" data-wishlisted="{{ 'true' if rel.id in wishlist_ids else 'false' }}">
+                                <i class="{% if rel.id in wishlist_ids %}fas{% else %}far{% endif %} fa-heart"></i>
+                            </button>
+                        {% else %}
+                            <a href="{{ url_for('login') }}" class="wishlist-btn" title="Login to add to wishlist">
+                                <i class="far fa-heart"></i>
+                            </a>
+                        {% endif %}
+                    </div>
+                    <div class="product-info">
+                        <h3 class="product-name">
+                            <a href="{{ url_for('product_details', product_id=rel.id) }}">{{ rel.name }}</a>
+                        </h3>
+                        {% if rel.rating > 0 %}
+                            <div class="product-rating">
+                                <span class="stars">{{ generate_stars(rel.rating)|safe }}</span>
+                                <span>{{ rel.rating }} ({{ rel.reviews_count }})</span>
+                            </div>
+                        {% endif %}
+                        <div class="product-bottom">
+                            <div class="product-price">
+                                <span class="price-current">₹{{ rel.price|number_format }}</span>
+                                {% if rel.original_price %}
+                                    <span class="price-original">₹{{ rel.original_price|number_format }}</span>
+                                {% endif %}
+                            </div>
+                            <button class="btn-add add-to-cart-btn" data-product-id="{{ rel.id }}"><i class="fas fa-cart-plus"></i> Add</button>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- Customer Reviews Section -->
+<section class="section reviews-section">
+    <div class="container">
+        <div class="section-header">
+            <h2><em>Customer Reviews</em></h2>
+            <p>{{ reviews|length }} review{{ 's' if reviews|length != 1 else '' }} for {{ product.name }}</p>
+        </div>
+
+        <!-- Review Summary -->
+        <div class="review-summary-bar">
+            <div class="review-avg">
+                <span class="review-avg-number">{{ product.rating }}</span>
+                <div>
+                    <div class="review-avg-stars">{{ generate_stars(product.rating)|safe }}</div>
+                    <span class="review-avg-count">Based on {{ product.reviews_count }} review{{ 's' if product.reviews_count != 1 else '' }}</span>
+                </div>
+            </div>
+            {% if is_logged_in and not user_has_reviewed %}
+                <button class="btn btn-primary" onclick="document.getElementById('reviewForm').scrollIntoView({behavior:'smooth'})">
+                    <i class="fas fa-pen"></i> Write a Review
+                </button>
+            {% endif %}
+        </div>
+
+        <!-- Reviews List -->
+        {% if reviews|length > 0 %}
+            {% if reviews|length > 1 %}
+            <div class="product-feedback-slider" aria-label="Product customer reviews">
+                <div class="product-feedback-track">
+                    <div class="product-feedback-set">
+                        {% for review in reviews %}
+                        <div class="review-card product-feedback-card">
+                            <div class="review-header">
+                                <div class="review-user">
+                                    <div class="review-avatar">{{ review.user_name[0]|upper }}</div>
+                                    <div>
+                                        <strong class="review-author">{{ review.user_name }}</strong>
+                                        <span class="review-date">{{ review.created_at.strftime('%d %b %Y') }}</span>
+                                    </div>
+                                </div>
+                                <div class="review-rating-badge">
+                                    {{ review.rating }} <i class="fas fa-star"></i>
+                                </div>
+                            </div>
+                            {% if review.comment %}
+                                <p class="review-comment">{{ review.comment }}</p>
+                            {% endif %}
+                            {% if review.image %}
+                                <div class="review-image">
+                                    <img src="{{ url_for('static', filename='uploads/reviews/' + review.image) }}" alt="Review photo" onclick="openReviewImage(this.src)">
+                                </div>
+                            {% endif %}
+                            {% if is_logged_in and (review.user_id == session.get('user_id') or is_admin) %}
+                                <div class="review-actions">
+                                    <a href="{{ url_for('delete_review', review_id=review.id) }}" class="review-delete-btn" onclick="return confirm('Are you sure you want to delete this review?')">
+                                        <i class="fas fa-trash-alt"></i> Delete
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="product-feedback-set" aria-hidden="true">
+                        {% for review in reviews %}
+                        <div class="review-card product-feedback-card">
+                            <div class="review-header">
+                                <div class="review-user">
+                                    <div class="review-avatar">{{ review.user_name[0]|upper }}</div>
+                                    <div>
+                                        <strong class="review-author">{{ review.user_name }}</strong>
+                                        <span class="review-date">{{ review.created_at.strftime('%d %b %Y') }}</span>
+                                    </div>
+                                </div>
+                                <div class="review-rating-badge">
+                                    {{ review.rating }} <i class="fas fa-star"></i>
+                                </div>
+                            </div>
+                            {% if review.comment %}
+                                <p class="review-comment">{{ review.comment }}</p>
+                            {% endif %}
+                            {% if review.image %}
+                                <div class="review-image">
+                                    <img src="{{ url_for('static', filename='uploads/reviews/' + review.image) }}" alt="Review photo" onclick="openReviewImage(this.src)">
+                                </div>
+                            {% endif %}
+                            {% if is_logged_in and (review.user_id == session.get('user_id') or is_admin) %}
+                                <div class="review-actions">
+                                    <a href="{{ url_for('delete_review', review_id=review.id) }}" class="review-delete-btn" onclick="return confirm('Are you sure you want to delete this review?')">
+                                        <i class="fas fa-trash-alt"></i> Delete
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="reviews-list">
+                {% for review in reviews %}
+                <div class="review-card">
+                    <div class="review-header">
+                        <div class="review-user">
+                            <div class="review-avatar">{{ review.user_name[0]|upper }}</div>
+                            <div>
+                                <strong class="review-author">{{ review.user_name }}</strong>
+                                <span class="review-date">{{ review.created_at.strftime('%d %b %Y') }}</span>
+                            </div>
+                        </div>
+                        <div class="review-rating-badge">
+                            {{ review.rating }} <i class="fas fa-star"></i>
+                        </div>
+                    </div>
+                    {% if review.comment %}
+                        <p class="review-comment">{{ review.comment }}</p>
+                    {% endif %}
+                    {% if review.image %}
+                        <div class="review-image">
+                            <img src="{{ url_for('static', filename='uploads/reviews/' + review.image) }}" alt="Review photo" onclick="openReviewImage(this.src)">
+                        </div>
+                    {% endif %}
+                    {% if is_logged_in and (review.user_id == session.get('user_id') or is_admin) %}
+                        <div class="review-actions">
+                            <a href="{{ url_for('delete_review', review_id=review.id) }}" class="review-delete-btn" onclick="return confirm('Are you sure you want to delete this review?')">
+                                <i class="fas fa-trash-alt"></i> Delete
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        {% else %}
+        <div class="reviews-list">
+            <div class="no-reviews">
+                <i class="far fa-comment-dots"></i>
+                <h3>No Reviews Yet</h3>
+                <p>Be the first to review this product!</p>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Write Review Form -->
+        {% if is_logged_in and not user_has_reviewed %}
+        <div class="review-form-wrapper" id="reviewForm">
+            <h3><i class="fas fa-star"></i> Write Your Review</h3>
+            <form action="{{ url_for('submit_review', product_id=product.id) }}" method="POST" enctype="multipart/form-data">
+                <!-- Star Rating -->
+                <div class="form-group">
+                    <label>Your Rating <span style="color:var(--red);">*</span></label>
+                    <div class="rating-widget">
+                        <input type="number" name="rating" id="reviewRatingInput" min="1" max="5" step="0.1" value="5.0" required class="form-control" style="max-width: 160px;">
+                        <div class="rating-stars-row" aria-label="Rate this product">
+                            <button type="button" class="rating-star" data-value="1" aria-label="1 star"><i class="fas fa-star"></i></button>
+                            <button type="button" class="rating-star" data-value="2" aria-label="2 stars"><i class="fas fa-star"></i></button>
+                            <button type="button" class="rating-star" data-value="3" aria-label="3 stars"><i class="fas fa-star"></i></button>
+                            <button type="button" class="rating-star" data-value="4" aria-label="4 stars"><i class="fas fa-star"></i></button>
+                            <button type="button" class="rating-star" data-value="5" aria-label="5 stars"><i class="fas fa-star"></i></button>
+                            <span class="rating-status" id="ratingStatusText">Excellent</span>
+                        </div>
+                    </div>
+                    <small style="display:block; margin-top:8px; color:var(--gray);">You can enter exact rating like 4.5 or 4.7</small>
+                </div>
+
+                <!-- Comment -->
+                <div class="form-group">
+                    <label for="reviewComment">Your Review</label>
+                    <textarea name="comment" id="reviewComment" rows="4" class="form-control" placeholder="Share your experience with this product..."></textarea>
+                </div>
+
+                <!-- Image Upload -->
+                <div class="form-group">
+                    <label for="reviewImage">Upload Photo (optional)</label>
+                    <div class="review-upload-area" id="reviewUploadArea">
+                        <input type="file" name="review_image" id="reviewImage" accept="image/*" style="display:none;" onchange="previewReviewImage(this)">
+                        <div class="upload-placeholder" id="uploadPlaceholder" onclick="document.getElementById('reviewImage').click()">
+                            <i class="fas fa-camera"></i>
+                            <span>Click to upload a photo</span>
+                            <small>JPG, PNG, GIF, WEBP (Max 16MB)</small>
+                        </div>
+                        <div class="upload-preview" id="uploadPreview" style="display:none;">
+                            <img id="previewImg" src="" alt="Preview">
+                            <button type="button" class="remove-preview" onclick="removePreviewImage()">&times;</button>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-lg" style="width:100%;">
+                    <i class="fas fa-paper-plane"></i> Submit Review
+                </button>
+            </form>
+        </div>
+        {% elif not is_logged_in %}
+        <div class="review-login-prompt">
+            <i class="fas fa-user-circle"></i>
+            <p>Please <a href="{{ url_for('login') }}">login</a> to write a review.</p>
+        </div>
+        {% elif user_has_reviewed %}
+        <div class="review-login-prompt">
+            <i class="fas fa-check-circle" style="color:var(--success);"></i>
+            <p>You have already reviewed this product. Thank you!</p>
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+<!-- Image Modal -->
+<div class="review-image-modal" id="reviewImageModal" onclick="closeReviewImage()">
+    <span class="modal-close">&times;</span>
+    <img id="modalImage" src="" alt="Review photo">
+</div>
+
+<script>
+function previewReviewImage(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('previewImg').src = e.target.result;
+            document.getElementById('uploadPlaceholder').style.display = 'none';
+            document.getElementById('uploadPreview').style.display = 'block';
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+function removePreviewImage() {
+    document.getElementById('reviewImage').value = '';
+    document.getElementById('previewImg').src = '';
+    document.getElementById('uploadPlaceholder').style.display = 'flex';
+    document.getElementById('uploadPreview').style.display = 'none';
+}
+
+function openReviewImage(src) {
+    document.getElementById('modalImage').src = src;
+    document.getElementById('reviewImageModal').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+
+function closeReviewImage() {
+    document.getElementById('reviewImageModal').style.display = 'none';
+    document.body.style.overflow = '';
+}
+
+function getRatingStatusText(rating) {
+    if (rating >= 4.5) return 'Excellent';
+    if (rating >= 3.5) return 'Very Good';
+    if (rating >= 2.5) return 'Good';
+    if (rating >= 1.5) return 'Bad';
+    return 'Very Bad';
+}
+
+function updateRatingWidget() {
+    const input = document.getElementById('reviewRatingInput');
+    const stars = document.querySelectorAll('.rating-star');
+    const status = document.getElementById('ratingStatusText');
+    if (!input || !stars.length || !status) return;
+
+    let rating = parseFloat(input.value);
+    if (isNaN(rating)) rating = 5.0;
+    if (rating < 1) rating = 1;
+    if (rating > 5) rating = 5;
+    rating = Math.round(rating * 10) / 10;
+    input.value = rating.toFixed(1);
+
+    const full = Math.floor(rating);
+    const frac = rating - full;
+
+    stars.forEach(function(btn, idx) {
+        const icon = btn.querySelector('i');
+        const pos = idx + 1;
+        icon.className = 'far fa-star';
+
+        if (pos <= full) {
+            icon.className = 'fas fa-star';
+        } else if (pos === full + 1 && frac >= 0.5) {
+            icon.className = 'fas fa-star-half-alt';
+        }
+    });
+
+    status.textContent = getRatingStatusText(rating);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const input = document.getElementById('reviewRatingInput');
+    const stars = document.querySelectorAll('.rating-star');
+    if (input) {
+        input.addEventListener('input', updateRatingWidget);
+        input.addEventListener('change', updateRatingWidget);
+    }
+
+    stars.forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            if (input) {
+                input.value = Number(btn.getAttribute('data-value')).toFixed(1);
+                updateRatingWidget();
+            }
+        });
+    });
+
+    updateRatingWidget();
+});
+</script>
+
+{% endblock %}

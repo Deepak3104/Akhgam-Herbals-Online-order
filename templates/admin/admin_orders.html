@@ -1,0 +1,108 @@
+{% extends "admin_base.html" %}
+{% block content %}
+
+<section class="section" style="padding-top:30px;">
+    <div class="container">
+        <h2 style="font-family:var(--font-body); font-size:1.5rem; margin-bottom:25px;">
+            <i class="fas fa-shopping-cart" style="color:var(--primary); margin-right:8px;"></i> Manage Orders
+        </h2>
+
+        <!-- Order Stats -->
+        <div class="dashboard-stats" style="margin-bottom:30px;">
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-shopping-cart"></i></div>
+                <div class="stat-number" data-count="{{ total_orders }}">{{ total_orders }}</div>
+                <div class="stat-label">Total Orders</div>
+            </div>
+            <div class="stat-card accent">
+                <div class="stat-icon"><i class="fas fa-clock"></i></div>
+                <div class="stat-number" data-count="{{ pending_orders }}">{{ pending_orders }}</div>
+                <div class="stat-label">Pending</div>
+            </div>
+            <div class="stat-card pink">
+                <div class="stat-icon"><i class="fas fa-check-double"></i></div>
+                <div class="stat-number" data-count="{{ delivered_orders }}">{{ delivered_orders }}</div>
+                <div class="stat-label">Delivered</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-rupee-sign"></i></div>
+                <div class="stat-number">₹{{ total_revenue|number_format }}</div>
+                <div class="stat-label">Total Revenue</div>
+            </div>
+        </div>
+
+        <!-- Filter Tabs -->
+        <div class="filter-bar" style="margin-bottom:20px;">
+            <div class="filter-tabs">
+                <a href="{{ url_for('admin_orders') }}" class="filter-tab {{ 'active' if not status_filter }}">All</a>
+                <a href="{{ url_for('admin_orders', status='pending') }}" class="filter-tab {{ 'active' if status_filter == 'pending' }}">Pending</a>
+                <a href="{{ url_for('admin_orders', status='confirmed') }}" class="filter-tab {{ 'active' if status_filter == 'confirmed' }}">Confirmed</a>
+                <a href="{{ url_for('admin_orders', status='processing') }}" class="filter-tab {{ 'active' if status_filter == 'processing' }}">Processing</a>
+                <a href="{{ url_for('admin_orders', status='shipped') }}" class="filter-tab {{ 'active' if status_filter == 'shipped' }}">Shipped</a>
+                <a href="{{ url_for('admin_orders', status='delivered') }}" class="filter-tab {{ 'active' if status_filter == 'delivered' }}">Delivered</a>
+                <a href="{{ url_for('admin_orders', status='cancelled') }}" class="filter-tab {{ 'active' if status_filter == 'cancelled' }}">Cancelled</a>
+            </div>
+        </div>
+
+        <!-- Orders Table -->
+        {% if orders %}
+        <div class="admin-table-wrap" style="overflow-x:auto;">
+            <table class="admin-table" style="width:100%; border-collapse:collapse;">
+                <thead>
+                    <tr>
+                        <th style="padding:12px 15px; text-align:left; background:var(--primary); color:#fff; font-size:0.85rem;">Order #</th>
+                        <th style="padding:12px 15px; text-align:left; background:var(--primary); color:#fff; font-size:0.85rem;">Customer</th>
+                        <th style="padding:12px 15px; text-align:left; background:var(--primary); color:#fff; font-size:0.85rem;">Items</th>
+                        <th style="padding:12px 15px; text-align:left; background:var(--primary); color:#fff; font-size:0.85rem;">Total</th>
+                        <th style="padding:12px 15px; text-align:left; background:var(--primary); color:#fff; font-size:0.85rem;">Payment</th>
+                        <th style="padding:12px 15px; text-align:left; background:var(--primary); color:#fff; font-size:0.85rem;">Status</th>
+                        <th style="padding:12px 15px; text-align:left; background:var(--primary); color:#fff; font-size:0.85rem;">Date</th>
+                        <th style="padding:12px 15px; text-align:center; background:var(--primary); color:#fff; font-size:0.85rem;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in orders %}
+                    <tr style="border-bottom:1px solid #eee;">
+                        <td style="padding:12px 15px; font-size:0.85rem; font-weight:600;">{{ order.order_number }}</td>
+                        <td style="padding:12px 15px; font-size:0.85rem;">
+                            <strong>{{ order.customer_name }}</strong><br>
+                            <small style="color:#999;">{{ order.customer_email }}</small>
+                        </td>
+                        <td style="padding:12px 15px; font-size:0.85rem;">{{ order.item_count }}</td>
+                        <td style="padding:12px 15px; font-size:0.85rem; font-weight:600;">₹{{ order.total_amount|number_format }}</td>
+                        <td style="padding:12px 15px; font-size:0.85rem;">{{ order.payment_method|upper }}</td>
+                        <td style="padding:12px 15px;">
+                            <form method="POST" action="{{ url_for('admin_update_order_status', order_id=order.id) }}" style="display:flex; gap:5px;">
+                                <select name="status" class="form-control" style="font-size:0.8rem; padding:5px 8px; border-radius:6px; min-width:120px;"
+                                        onchange="this.form.submit()">
+                                    <option value="pending" {{ 'selected' if order.status == 'pending' }}>Pending</option>
+                                    <option value="confirmed" {{ 'selected' if order.status == 'confirmed' }}>Confirmed</option>
+                                    <option value="processing" {{ 'selected' if order.status == 'processing' }}>Processing</option>
+                                    <option value="shipped" {{ 'selected' if order.status == 'shipped' }}>Shipped</option>
+                                    <option value="delivered" {{ 'selected' if order.status == 'delivered' }}>Delivered</option>
+                                    <option value="cancelled" {{ 'selected' if order.status == 'cancelled' }}>Cancelled</option>
+                                </select>
+                            </form>
+                        </td>
+                        <td style="padding:12px 15px; font-size:0.8rem; color:#999;">{{ order.created_at.strftime('%d %b %Y') }}</td>
+                        <td style="padding:12px 15px; text-align:center;">
+                            <a href="{{ url_for('admin_order_detail', order_id=order.id) }}" class="btn btn-secondary btn-sm" style="font-size:0.75rem;">
+                                <i class="fas fa-eye"></i> View
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center" style="padding:60px 0;">
+            <i class="fas fa-shopping-cart" style="font-size:3rem; color:#ccc; margin-bottom:20px;"></i>
+            <h3 style="color:#999;">No orders found</h3>
+            <p style="color:#bbb;">{{ 'No orders with status: ' + status_filter if status_filter else 'No orders have been placed yet.' }}</p>
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+{% endblock %}

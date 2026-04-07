@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- Page Header -->
+<div class="page-header">
+    <div class="container">
+        <h2>{{ category if category else ('Search Results' if search else 'Our Products') }}</h2>
+        <p>{{ 'Showing results for "' + search + '"' if search else 'Explore our complete range of Ayurvedic products' }}</p>
+        <div class="breadcrumb">
+            <a href="{{ url_for('index') }}">Home</a>
+            <i class="fas fa-chevron-right" style="font-size:0.7rem;"></i>
+            <span>Products</span>
+            {% if category %}
+                <i class="fas fa-chevron-right" style="font-size:0.7rem;"></i>
+                <span>{{ category }}</span>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<section class="section">
+    <div class="container">
+
+        <!-- Filter Bar -->
+        <div class="filter-bar">
+            <div class="filter-tabs">
+                <a href="{{ url_for('products') }}" class="filter-tab {{ 'active' if not category }}">All</a>
+                {% for cat in categories %}
+                    <a href="{{ url_for('products', category=cat.category) }}" class="filter-tab {{ 'active' if category == cat.category }}">
+                        {{ cat.category }}
+                    </a>
+                {% endfor %}
+            </div>
+            <form method="GET" action="{{ url_for('products') }}" style="display:flex; gap:10px; align-items:center;">
+                {% if category %}
+                    <input type="hidden" name="category" value="{{ category }}">
+                {% endif %}
+                {% if search %}
+                    <input type="hidden" name="search" value="{{ search }}">
+                {% endif %}
+                <select name="sort" class="sort-select" onchange="this.form.submit()">
+                    <option value="newest" {{ 'selected' if sort == 'newest' }}>Newest First</option>
+                    <option value="price_low" {{ 'selected' if sort == 'price_low' }}>Price: Low to High</option>
+                    <option value="price_high" {{ 'selected' if sort == 'price_high' }}>Price: High to Low</option>
+                    <option value="rating" {{ 'selected' if sort == 'rating' }}>Highest Rated</option>
+                    <option value="popular" {{ 'selected' if sort == 'popular' }}>Most Popular</option>
+                </select>
+            </form>
+        </div>
+
+        <!-- Products Grid -->
+        {% if products %}
+            <div class="products-grid">
+                {% for product in products %}
+                    {% set savings = (product.original_price - product.price)|round|int if product.original_price else 0 %}
+                    <div class="product-card">
+                        <div class="product-badge">
+                            {% if savings > 0 %}
+                                <span class="badge-save">Save ₹{{ savings }}</span>
+                            {% endif %}
+                            {% if product.featured %}
+                                <span class="badge-featured">FEATURED</span>
+                            {% endif %}
+                            {% if product.reviews_count > 300 %}
+                                <span class="badge-bestseller">BEST SELLER</span>
+                            {% endif %}
+                        </div>
+                        <div class="product-img">
+                            <a href="{{ url_for('product_details', product_id=product.id) }}">
+                                {% if product.image and product.image != 'default.jpg' %}
+                                    <img src="{{ url_for('static', filename='uploads/products/' + product.image) }}" alt="{{ product.name }}">
+                                {% else %}
+                                    <div class="no-image">
+                                        <i class="fas fa-leaf"></i>
+                                        <span>{{ product.name }}</span>
+                                    </div>
+                                {% endif %}
+                            </a>
+                            {% if is_logged_in %}
+                                <button class="wishlist-btn" data-product-id="{{ product.id }}" data-wishlisted="{{ 'true' if product.id in wishlist_ids else 'false' }}">
+                                    <i class="{% if product.id in wishlist_ids %}fas{% else %}far{% endif %} fa-heart"></i>
+                                </button>
+                            {% else %}
+                                <a href="{{ url_for('login') }}" class="wishlist-btn" title="Login to add to wishlist">
+                                    <i class="far fa-heart"></i>
+                                </a>
+                            {% endif %}
+                        </div>
+                        <div class="product-info">
+                            <span class="product-category">{{ product.category }}</span>
+                            <h3 class="product-name">
+                                <a href="{{ url_for('product_details', product_id=product.id) }}">{{ product.name }}</a>
+                            </h3>
+                            {% if product.rating > 0 %}
+                                <div class="product-rating">
+                                    <span class="stars">{{ generate_stars(product.rating)|safe }}</span>
+                                    <span>{{ product.rating }} ({{ product.reviews_count }})</span>
+                                </div>
+                            {% endif %}
+                            <div class="product-bottom">
+                                <div class="product-price">
+                                    <span class="price-current">₹{{ product.price|number_format }}</span>
+                                    {% if product.original_price %}
+                                        <span class="price-original">₹{{ product.original_price|number_format }}</span>
+                                    {% endif %}
+                                </div>
+                                <button class="btn-add add-to-cart-btn" data-product-id="{{ product.id }}"><i class="fas fa-cart-plus"></i> Add</button>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center" style="padding: 60px 0;">
+                <i class="fas fa-search" style="font-size: 3rem; color: #ccc; margin-bottom: 20px;"></i>
+                <h3 style="color: #999; margin-bottom: 10px;">No products found</h3>
+                <p style="color: #bbb;">Try adjusting your search or filter criteria</p>
+                <a href="{{ url_for('products') }}" class="btn btn-primary mt-2">View All Products</a>
+            </div>
+        {% endif %}
+
+    </div>
+</section>
+
+{% endblock %}

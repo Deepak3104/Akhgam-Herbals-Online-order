@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify OTP - {{ site_name }}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+<div class="auth-wrapper">
+    <div class="auth-card">
+        <div class="auth-banner">
+            <a href="{{ url_for('index') }}" class="logo" style="margin-bottom:30px;">
+                <img src="{{ url_for('static', filename='images/logo-dark.png') }}" alt="Akhgam - Beauty Inside" class="auth-logo-img">
+            </a>
+            <h2>Verify Your Mobile</h2>
+            <p>Enter the one-time password sent to your mobile number to finish the secure {{ 'registration' if purpose == 'register' else 'login' }} process.</p>
+            <div class="auth-perks">
+                <div class="perk">
+                    <i class="fas fa-shield-alt"></i>
+                    <span>Protects against unauthorized access</span>
+                </div>
+                <div class="perk">
+                    <i class="fas fa-mobile-alt"></i>
+                    <span>Sent to {{ phone_mask }}</span>
+                </div>
+                <div class="perk">
+                    <i class="fas fa-clock"></i>
+                    <span>Expires quickly for better security</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="auth-form">
+            <h2>Enter OTP</h2>
+            <p class="form-subtitle">We sent a {{ otp_length }}-digit code to {{ phone_mask }}</p>
+
+            {% if error %}
+                <div class="alert alert-error"><i class="fas fa-exclamation-circle"></i> {{ error }}</div>
+            {% endif %}
+            {% if info %}
+                <div class="alert alert-success"><i class="fas fa-check-circle"></i> {{ info }}</div>
+            {% endif %}
+
+            <form method="POST" data-validate>
+                <div class="form-group">
+                    <label>One-Time Password</label>
+                    <div class="input-icon">
+                        <i class="fas fa-key"></i>
+                        <input type="text" name="otp" placeholder="Enter {{ otp_length }}-digit OTP" inputmode="numeric" pattern="[0-9]{{ '{' ~ otp_length ~ '}' }}" maxlength="{{ otp_length }}" required autofocus>
+                    </div>
+                </div>
+
+                <div class="form-actions" style="display:flex; gap:12px; flex-wrap:wrap;">
+                    <button type="submit" name="action" value="verify" class="btn btn-primary btn-lg">
+                        <i class="fas fa-check"></i> Verify OTP
+                    </button>
+                    <button type="submit" name="action" value="resend" class="btn btn-secondary btn-lg">
+                        <i class="fas fa-redo"></i> Resend OTP
+                    </button>
+                </div>
+            </form>
+
+            <p class="form-link"><a href="{{ url_for('login') }}"><i class="fas fa-arrow-left"></i> Back to Login</a></p>
+            <p class="form-link"><a href="{{ url_for('register') }}">Create a new account</a></p>
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

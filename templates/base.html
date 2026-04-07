@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ page_title + ' - ' + site_name if page_title else site_name + ' - ' + site_tagline }}</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/logo-light.png') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+<!-- Announcement Bar -->
+<div class="announcement-bar">
+    <div class="announcement-rotator" aria-label="Current offers" aria-live="polite">
+        {% for offer in offers %}
+            <div class="announcement-item">
+                <span class="offer-label">{{ offer.label }}</span>
+                <span><i class="{{ offer.icon }}"></i> {{ offer.description }}</span>
+            </div>
+        {% endfor %}
+        {% if not offers %}
+            <div class="announcement-item">
+                <span class="offer-label">Welcome</span>
+                <span>🌿 Welcome to Akhgam Herbals</span>
+            </div>
+        {% endif %}
+    </div>
+    <a href="{{ url_for('products') }}">Shop Now</a>
+</div>
+
+<!-- Header -->
+<header class="header">
+    <div class="nav-wrapper">
+        <!-- Logo -->
+        <a href="{{ url_for('index') }}" class="logo">
+            <img src="{{ url_for('static', filename='images/logo-light.png') }}" alt="Akhgam - Beauty Inside" class="logo-img">
+            <span class="logo-title">Akhgam Herbals</span>
+        </a>
+
+        <!-- Navigation -->
+        <nav class="nav-menu" id="navMenu">
+            <button class="mobile-close mobile-toggle" onclick="document.getElementById('navMenu').classList.remove('show'); document.body.style.overflow='';">
+                <i class="fas fa-times"></i>
+            </button>
+            <a href="{{ url_for('index') }}" class="{{ 'active' if request.endpoint == 'index' }}">Home</a>
+            <a href="{{ url_for('products') }}" class="{{ 'active' if request.endpoint == 'products' }}">Products</a>
+            <a href="{{ url_for('about') }}" class="{{ 'active' if request.endpoint == 'about' }}">About</a>
+            <a href="{{ url_for('feedback') }}" class="{{ 'active' if request.endpoint == 'feedback' }}">Feedback</a>
+            <a href="{{ url_for('contact') }}" class="{{ 'active' if request.endpoint == 'contact' }}">Contact</a>
+            {% if not is_logged_in %}
+                <a href="{{ url_for('login') }}" class="mobile-only {{ 'active' if request.endpoint == 'login' }}">Login</a>
+                <a href="{{ url_for('register') }}" class="mobile-only">Register</a>
+            {% endif %}
+            {% if is_logged_in %}
+                <a href="{{ url_for('admin_dashboard') if is_admin else url_for('dashboard') }}" class="mobile-only {{ 'active' if request.endpoint in ['dashboard', 'admin_dashboard'] }}">Dashboard</a>
+                {% if not is_admin %}
+                <a href="{{ url_for('my_orders') }}" class="mobile-only {{ 'active' if request.endpoint == 'my_orders' }}">My Orders</a>
+                {% endif %}
+                <a href="{{ url_for('logout') }}" class="mobile-only">Logout</a>
+            {% endif %}
+        </nav>
+
+        <!-- Nav Actions -->
+        <div class="nav-actions">
+            <button class="nav-action-btn search-trigger" title="Search">
+                <i class="fas fa-search"></i>
+            </button>
+            <button class="nav-action-btn" id="themeToggle" title="Toggle dark/light mode">
+                <i class="fas fa-moon" id="themeIcon"></i>
+            </button>
+            {% if is_logged_in and not is_admin %}
+            <a href="{{ url_for('view_cart') }}" class="nav-action-btn nav-cart-link" title="Shopping Cart">
+                <i class="fas fa-shopping-cart"></i>
+                {% if cart_count > 0 %}
+                <span class="cart-badge" id="cartBadge">{{ cart_count }}</span>
+                {% endif %}
+            </a>
+            {% endif %}
+            {% if is_logged_in %}
+                <!-- User Dropdown -->
+                <div class="nav-user-dropdown" id="userDropdown">
+                    <button class="nav-user-btn" id="userDropdownBtn" title="{{ user_name }}">
+                        {% if user_profile_image %}
+                            <img src="{{ url_for('static', filename='uploads/profiles/' + user_profile_image) }}" alt="{{ user_name }}" class="nav-profile-img">
+                        {% else %}
+                            <div class="nav-profile-avatar">{{ user_name[0]|upper }}</div>
+                        {% endif %}
+                        <i class="fas fa-chevron-down nav-user-chevron"></i>
+                    </button>
+                    <div class="nav-dropdown-menu" id="userDropdownMenu">
+                        <div class="nav-dropdown-header">
+                            <span class="nav-dropdown-name">{{ user_name }}</span>
+                            <span class="nav-dropdown-email">{{ user_email }}</span>
+                        </div>
+                        <div class="nav-dropdown-divider"></div>
+                        <a href="{{ url_for('admin_dashboard') if is_admin else url_for('dashboard') }}" class="nav-dropdown-item">
+                            <i class="fas fa-tachometer-alt"></i> Dashboard
+                        </a>
+                        {% if not is_admin %}
+                        <a href="{{ url_for('my_orders') }}" class="nav-dropdown-item">
+                            <i class="fas fa-box"></i> My Orders
+                        </a>
+                        {% endif %}
+                        <div class="nav-dropdown-divider"></div>
+                        <a href="{{ url_for('logout') }}" class="nav-dropdown-item nav-dropdown-logout">
+                            <i class="fas fa-sign-out-alt"></i> Logout
+                        </a>
+                        {% if not is_admin %}
+                        <a href="#" class="nav-dropdown-item nav-dropdown-delete" onclick="event.preventDefault(); document.getElementById('deleteAccountModal').classList.add('show');">
+                            <i class="fas fa-trash-alt"></i> Delete Account
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            {% else %}
+                <!-- Auth Buttons -->
+                <div class="nav-auth-btns">
+                    <a href="{{ url_for('login') }}" class="btn-login">Login</a>
+                    <a href="{{ url_for('register') }}" class="btn-register">Register</a>
+                </div>
+            {% endif %}
+            <button class="mobile-toggle" onclick="document.getElementById('navMenu').classList.add('show'); document.body.style.overflow='hidden';">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </div>
+</header>
+
+<!-- Marquee Bar -->
+<div class="marquee-bar">
+    <div class="marquee-content">
+        <span>🌿 Modern Ayurveda <span class="sep">—</span></span>
+        <span>✅ Proven by Results <span class="sep">—</span></span>
+        <span>🚫 Nasties Free <span class="sep">—</span></span>
+        <span>💚 Kind to You <span class="sep">—</span></span>
+        <span>🌿 Modern Ayurveda <span class="sep">—</span></span>
+        <span>✅ Proven by Results <span class="sep">—</span></span>
+        <span>🚫 Nasties Free <span class="sep">—</span></span>
+        <span>💚 Kind to You <span class="sep">—</span></span>
+        <span>🌿 Modern Ayurveda <span class="sep">—</span></span>
+        <span>✅ Proven by Results <span class="sep">—</span></span>
+        <span>🚫 Nasties Free <span class="sep">—</span></span>
+        <span>💚 Kind to You <span class="sep">—</span></span>
+    </div>
+</div>
+
+<!-- Search Modal -->
+<div class="search-modal" id="searchModal">
+    <div class="search-modal-content">
+        <button class="search-close" style="position:absolute; top:15px; right:20px; background:none; border:none; font-size:1.5rem; color:#888; cursor:pointer;" title="Close">&times;</button>
+        <form action="{{ url_for('products') }}" method="GET">
+            <input type="text" name="search" class="search-input" placeholder="Search for herbal products..." autofocus>
+        </form>
+        <p class="mt-2 text-center" style="color: #999; font-size: 0.85rem;">Press Enter to search or click outside to close</p>
+    </div>
+</div>
+
+<!-- Flash Messages -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ 'success' if category == 'success' else 'error' }}">
+                <i class="fas fa-{{ 'check-circle' if category == 'success' else 'exclamation-circle' }}"></i> {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+{% block content %}{% endblock %}
+
+<!-- Promise Bar -->
+<div class="section" style="padding: 30px 0;">
+    <div class="container">
+        <div class="promise-bar">
+            <h3><em>The Akhgam Herbals Promise</em></h3>
+            <div class="promise-items">
+                <div class="promise-item">
+                    <i class="fas fa-check-circle"></i>
+                    <span>Rooted in Ayurveda</span>
+                </div>
+                <div class="promise-item">
+                    <i class="fas fa-check-circle"></i>
+                    <span>Safe for daily use</span>
+                </div>
+                <div class="promise-item">
+                    <i class="fas fa-check-circle"></i>
+                    <span>Proven results powered by nature</span>
+                </div>
+                <div class="promise-item">
+                    <i class="fas fa-check-circle"></i>
+                    <span>No harsh chemicals</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Footer -->
+<footer class="footer">
+    <div class="container">
+        <div class="footer-grid">
+            <!-- About Column -->
+            <div class="footer-col footer-col-about">
+                <div class="footer-logo">
+                    <img src="{{ url_for('static', filename='images/logo-light.png') }}" alt="Akhgam - Beauty Inside" class="footer-logo-img">
+                </div>
+                <p>Blending Ayurvedic wisdom with modern insights for holistic beauty solutions that work for all. Our products are crafted with love using nature's finest ingredients.</p>
+                <div class="footer-social">
+                    <a href="#"><i class="fab fa-facebook-f"></i></a>
+                    <a href="#"><i class="fab fa-instagram"></i></a>
+                    <a href="#"><i class="fab fa-twitter"></i></a>
+                    <a href="#"><i class="fab fa-youtube"></i></a>
+                    <a href="#"><i class="fab fa-linkedin-in"></i></a>
+                </div>
+            </div>
+
+            <!-- Useful Links -->
+            <div class="footer-col footer-col-links">
+                <h4>Useful Links</h4>
+                <ul>
+                    <li><a href="{{ url_for('products', category='Skin Care') }}">Skin Care</a></li>
+                    <li><a href="{{ url_for('products', category='Hair Care') }}">Hair Care</a></li>
+                    <li><a href="{{ url_for('products', category='Face Care') }}">Face Care</a></li>
+                    <li><a href="{{ url_for('products', category='Bath & Body') }}">Bath & Body</a></li>
+                    <li><a href="{{ url_for('products') }}">Shop All</a></li>
+                </ul>
+            </div>
+
+            <!-- Help & Support -->
+            <div class="footer-col footer-col-support">
+                <h4>Help & Support</h4>
+                <ul>
+                    <li><a href="{{ url_for('contact') }}">Contact Us</a></li>
+                    <li><a href="{{ url_for('about') }}">Our Story</a></li>
+                    <li><a href="{{ url_for('feedback') }}">Customer Feedback</a></li>
+                    <li><a href="#">Privacy Policy</a></li>
+                    <li><a href="#">Refund Policy</a></li>
+                    <li><a href="#">Terms of Service</a></li>
+                </ul>
+            </div>
+
+            <!-- Newsletter -->
+            <div class="footer-col footer-col-contact">
+                <div class="footer-newsletter">
+                    <h4>Subscribe to Newsletter</h4>
+                    <p>Get updates on new products and special offers.</p>
+                    <form class="newsletter-form" onsubmit="event.preventDefault(); alert('Thank you for subscribing!');">
+                        <input type="email" placeholder="Enter your email" required>
+                        <button type="submit">Submit</button>
+                    </form>
+                </div>
+
+                <div class="footer-address">
+                    <h4 class="mt-3">Company Address</h4>
+                    <p>{{ site_address }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer Bottom -->
+        <div class="footer-bottom">
+            <p>&copy; {{ current_year }} {{ site_name }}. All rights reserved.</p>
+            <div class="payment-methods">
+                <span>Payment Methods:</span>
+                <i class="fab fa-cc-visa"></i>
+                <i class="fab fa-cc-mastercard"></i>
+                <i class="fab fa-google-pay"></i>
+                <i class="fab fa-cc-paypal"></i>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<!-- WhatsApp Floating Button -->
+<a href="https://wa.me/{{ whatsapp_number }}?text={{ 'Hello Akhgam Herbals! I need help with your products.'|quote_url }}" target="_blank" class="whatsapp-float" title="Chat on WhatsApp">
+    <i class="fab fa-whatsapp"></i>
+</a>
+
+{% if is_logged_in and not is_admin %}
+<!-- Delete Account Modal -->
+<div class="modal-overlay" id="deleteAccountModal">
+    <div class="modal-box">
+        <button class="modal-close" onclick="document.getElementById('deleteAccountModal').classList.remove('show');">
+            <i class="fas fa-times"></i>
+        </button>
+        <div class="modal-icon modal-icon-danger">
+            <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <h3 class="modal-title">Delete Your Account</h3>
+        <p class="modal-desc">This action is <strong>permanent</strong> and cannot be undone. All your orders, reviews, and data will be removed.</p>
+        <form id="deleteAccountForm" method="POST" action="{{ url_for('delete_account') }}">
+            <div class="modal-field">
+                <label for="deletePassword">Enter your password to confirm</label>
+                <div class="modal-password-wrap">
+                    <input type="password" id="deletePassword" name="password" placeholder="Your password" required autocomplete="current-password">
+                    <button type="button" class="modal-pw-toggle" onclick="let i=document.getElementById('deletePassword'); i.type=i.type==='password'?'text':'password'; this.querySelector('i').classList.toggle('fa-eye'); this.querySelector('i').classList.toggle('fa-eye-slash');">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="modal-error" id="deleteAccountError"></div>
+            <div class="modal-actions">
+                <button type="button" class="modal-btn modal-btn-cancel" onclick="document.getElementById('deleteAccountModal').classList.remove('show');">
+                    Cancel
+                </button>
+                <button type="submit" class="modal-btn modal-btn-danger" id="deleteAccountSubmit">
+                    <i class="fas fa-trash-alt"></i> Delete Account
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+<script>
+// ---------- Dark/Light Mode (runs before main.js to prevent flash) ----------
+(function() {
+    var saved = localStorage.getItem('theme');
+    if (saved === 'dark') {
+        document.documentElement.setAttribute('data-theme', 'dark');
+    }
+})();
+</script>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

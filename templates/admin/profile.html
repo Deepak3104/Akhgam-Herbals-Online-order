@@ -1,0 +1,188 @@
+{% extends "admin_base.html" %}
+{% block content %}
+
+<section class="dashboard-section">
+    <div class="container">
+
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px; flex-wrap:wrap; gap:15px;">
+            <h2 style="font-family:var(--font-body); font-size:1.4rem;">
+                <i class="fas fa-user-cog" style="color:var(--primary);"></i> My Profile
+            </h2>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:30px;">
+
+            <!-- Profile Info Card -->
+            <div class="dashboard-content" id="profileViewSection">
+                <h4 style="font-family:var(--font-body); font-size:1.1rem; margin-bottom:20px; padding-bottom:10px; border-bottom:1px solid #eee;">
+                    <i class="fas fa-id-card" style="color:var(--primary); margin-right:8px;"></i> Account Details
+                </h4>
+
+                <div style="display:flex; flex-direction:column; gap:18px;">
+                    <div style="display:flex; align-items:center; gap:15px; margin-bottom:10px;">
+                        <div style="width:65px;height:65px;border-radius:50%;background:linear-gradient(135deg,#e67e22,#f39c12);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.5rem;font-weight:700;">
+                            {{ admin_user.name[0]|upper }}
+                        </div>
+                        <div>
+                            <strong style="font-size:1.2rem;">{{ admin_user.name }}</strong><br>
+                            <span style="background:#e67e22; color:#fff; padding:2px 10px; border-radius:12px; font-size:0.7rem; font-weight:600;">ADMIN</span>
+                        </div>
+                    </div>
+
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
+                        <div>
+                            <div style="font-size:0.75rem; text-transform:uppercase; letter-spacing:1px; color:#999; margin-bottom:4px;">Email</div>
+                            <div style="font-size:0.9rem; color:#333;">{{ admin_user.email }}</div>
+                        </div>
+                        <div>
+                            <div style="font-size:0.75rem; text-transform:uppercase; letter-spacing:1px; color:#999; margin-bottom:4px;">Phone</div>
+                            <div style="font-size:0.9rem; color:#333;">{{ admin_user.phone }}</div>
+                        </div>
+                        <div>
+                            <div style="font-size:0.75rem; text-transform:uppercase; letter-spacing:1px; color:#999; margin-bottom:4px;">Age</div>
+                            <div style="font-size:0.9rem; color:#333;">{{ admin_user.age or 'Not set' }}</div>
+                        </div>
+                        <div>
+                            <div style="font-size:0.75rem; text-transform:uppercase; letter-spacing:1px; color:#999; margin-bottom:4px;">Gender</div>
+                            <div style="font-size:0.9rem; color:#333;">{{ (admin_user.gender or 'Not set')|capitalize }}</div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div style="font-size:0.75rem; text-transform:uppercase; letter-spacing:1px; color:#999; margin-bottom:4px;">Address</div>
+                        <div style="font-size:0.9rem; color:#333;">{{ admin_user.address or 'Not set' }}</div>
+                    </div>
+
+                    <div>
+                        <div style="font-size:0.75rem; text-transform:uppercase; letter-spacing:1px; color:#999; margin-bottom:4px;">Pincode</div>
+                        <div style="font-size:0.9rem; color:#333;">{{ admin_user.pincode or 'Not set' }}</div>
+                    </div>
+
+                    <div>
+                        <div style="font-size:0.75rem; text-transform:uppercase; letter-spacing:1px; color:#999; margin-bottom:4px;">State</div>
+                        <div style="font-size:0.9rem; color:#333;">{{ admin_user.state or 'Not set' }}</div>
+                    </div>
+
+                    <div>
+                        <div style="font-size:0.75rem; text-transform:uppercase; letter-spacing:1px; color:#999; margin-bottom:4px;">District</div>
+                        <div style="font-size:0.9rem; color:#333;">{{ admin_user.district or 'Not set' }}</div>
+                    </div>
+
+                    <div>
+                        <div style="font-size:0.75rem; text-transform:uppercase; letter-spacing:1px; color:#999; margin-bottom:4px;">Member Since</div>
+                        <div style="font-size:0.9rem; color:#333;">{{ admin_user.created_at.strftime('%B %d, %Y') }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Edit Profile Form -->
+            <div class="dashboard-content">
+                <h4 style="font-family:var(--font-body); font-size:1.1rem; margin-bottom:20px; padding-bottom:10px; border-bottom:1px solid #eee;">
+                    <i class="fas fa-edit" style="color:var(--accent); margin-right:8px;"></i> Update Profile
+                </h4>
+
+                <form action="{{ url_for('admin_update_profile') }}" method="POST">
+                    <div style="display:flex; flex-direction:column; gap:15px;">
+
+                        <!-- Name -->
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label style="font-size:0.85rem; font-weight:600; color:#555; margin-bottom:5px; display:block;">Name <span style="color:var(--red);">*</span></label>
+                            <input type="text" name="name" class="form-control" value="{{ admin_user.name }}" required>
+                        </div>
+
+                        <!-- Phone -->
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label style="font-size:0.85rem; font-weight:600; color:#555; margin-bottom:5px; display:block;">Phone <span style="color:var(--red);">*</span></label>
+                            <input type="text" name="phone" class="form-control" value="{{ admin_user.phone }}" required>
+                        </div>
+
+                        <!-- Age & Gender -->
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label style="font-size:0.85rem; font-weight:600; color:#555; margin-bottom:5px; display:block;">Age</label>
+                                <input type="number" name="age" class="form-control" value="{{ admin_user.age or '' }}" min="1" max="120">
+                            </div>
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label style="font-size:0.85rem; font-weight:600; color:#555; margin-bottom:5px; display:block;">Gender</label>
+                                <select name="gender" class="form-control">
+                                    <option value="">Select</option>
+                                    <option value="male" {{ 'selected' if admin_user.gender == 'male' }}>Male</option>
+                                    <option value="female" {{ 'selected' if admin_user.gender == 'female' }}>Female</option>
+                                    <option value="other" {{ 'selected' if admin_user.gender == 'other' }}>Other</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Address -->
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label style="font-size:0.85rem; font-weight:600; color:#555; margin-bottom:5px; display:block;">Address</label>
+                            <textarea name="address" class="form-control" rows="3" placeholder="Enter your full address">{{ admin_user.address or '' }}</textarea>
+                        </div>
+
+                        <!-- Pincode -->
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label style="font-size:0.85rem; font-weight:600; color:#555; margin-bottom:5px; display:block;">Pincode</label>
+                            <input type="text" name="pincode" class="form-control" value="{{ admin_user.pincode or '' }}" maxlength="10" placeholder="e.g. 637015">
+                        </div>
+
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label style="font-size:0.85rem; font-weight:600; color:#555; margin-bottom:5px; display:block;">State</label>
+                                <input type="text" name="state" class="form-control" value="{{ admin_user.state or '' }}" placeholder="e.g. Tamil Nadu">
+                            </div>
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label style="font-size:0.85rem; font-weight:600; color:#555; margin-bottom:5px; display:block;">District</label>
+                                <input type="text" name="district" class="form-control" value="{{ admin_user.district or '' }}" placeholder="e.g. Namakkal">
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary" style="margin-top:5px;">
+                            <i class="fas fa-save"></i> Save Changes
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Password Change Section -->
+                <div style="margin-top:30px; padding-top:20px; border-top:2px solid #eee;">
+                    <h4 style="font-family:var(--font-body); font-size:1rem; margin-bottom:15px; color:#555;">
+                        <i class="fas fa-lock" style="color:var(--warning); margin-right:8px;"></i> Change Password
+                    </h4>
+                    <form action="{{ url_for('admin_update_profile') }}" method="POST">
+                        <!-- Hidden fields to preserve current profile data -->
+                        <input type="hidden" name="name" value="{{ admin_user.name }}">
+                        <input type="hidden" name="phone" value="{{ admin_user.phone }}">
+                        <input type="hidden" name="age" value="{{ admin_user.age or '' }}">
+                        <input type="hidden" name="gender" value="{{ admin_user.gender or '' }}">
+                        <input type="hidden" name="address" value="{{ admin_user.address or '' }}">
+                        <input type="hidden" name="state" value="{{ admin_user.state or '' }}">
+                        <input type="hidden" name="district" value="{{ admin_user.district or '' }}">
+                        <input type="hidden" name="pincode" value="{{ admin_user.pincode or '' }}">
+
+                        <div style="display:flex; flex-direction:column; gap:12px;">
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label style="font-size:0.85rem; font-weight:600; color:#555; margin-bottom:5px; display:block;">Current Password</label>
+                                <input type="password" name="current_password" class="form-control" placeholder="Enter current password">
+                            </div>
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                                <div class="form-group" style="margin-bottom:0;">
+                                    <label style="font-size:0.85rem; font-weight:600; color:#555; margin-bottom:5px; display:block;">New Password</label>
+                                    <input type="password" name="new_password" class="form-control" placeholder="Min 6 characters">
+                                </div>
+                                <div class="form-group" style="margin-bottom:0;">
+                                    <label style="font-size:0.85rem; font-weight:600; color:#555; margin-bottom:5px; display:block;">Confirm New Password</label>
+                                    <input type="password" name="confirm_new_password" class="form-control" placeholder="Repeat password">
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-secondary" style="margin-top:5px;">
+                                <i class="fas fa-key"></i> Update Password
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+{% endblock %}

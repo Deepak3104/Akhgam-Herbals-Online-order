@@ -1,0 +1,390 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- Page Header -->
+<div class="page-header">
+    <div class="container">
+        <h2>My Wishlist</h2>
+        <p>{{ wishlist_items|length }} item{{ 's' if wishlist_items|length != 1 else '' }} in your wishlist</p>
+        <div class="breadcrumb">
+            <a href="{{ url_for('index') }}">Home</a>
+            <i class="fas fa-chevron-right" style="font-size:0.7rem;"></i>
+            <a href="{{ url_for('dashboard') }}">Dashboard</a>
+            <i class="fas fa-chevron-right" style="font-size:0.7rem;"></i>
+            <span>Wishlist</span>
+        </div>
+    </div>
+</div>
+
+<section class="section">
+    <div class="container">
+        {% if wishlist_items %}
+        <div class="wishlist-layout">
+            <!-- Wishlist Items -->
+            <div class="wishlist-items-wrapper">
+                {% for item in wishlist_items %}
+                <div class="wishlist-item" id="wishlistItem{{ item.product_id }}">
+                    <div class="wishlist-item-img">
+                        <a href="{{ url_for('product_details', product_id=item.product_id) }}">
+                            {% if item.image and item.image != 'default.jpg' %}
+                                <img src="{{ url_for('static', filename='uploads/products/' + item.image) }}" alt="{{ item.name }}">
+                            {% else %}
+                                <div class="no-image" style="width:100%; height:100%; min-height:120px;">
+                                    <i class="fas fa-leaf"></i>
+                                </div>
+                            {% endif %}
+                        </a>
+                    </div>
+                    <div class="wishlist-item-details">
+                        <span class="wishlist-item-category">{{ item.category }}</span>
+                        <h4><a href="{{ url_for('product_details', product_id=item.product_id) }}">{{ item.name }}</a></h4>
+                        {% if item.rating %}
+                        <div class="wishlist-item-rating">
+                            <span class="rating-stars">
+                                {% for i in range(5) %}
+                                    {% if i < item.rating|int %}
+                                        <i class="fas fa-star"></i>
+                                    {% else %}
+                                        <i class="far fa-star"></i>
+                                    {% endif %}
+                                {% endfor %}
+                            </span>
+                            <span class="rating-value">({{ item.rating|round(1) }})</span>
+                        </div>
+                        {% endif %}
+                        <div class="wishlist-item-price">
+                            <span class="price-current">₹{{ item.price|number_format }}</span>
+                            {% if item.original_price %}
+                                <span class="price-original">₹{{ item.original_price|number_format }}</span>
+                                <span class="price-discount">{{ (((item.original_price - item.price) / item.original_price * 100)|int) }}% OFF</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="wishlist-item-actions">
+                        <form method="POST" action="{{ url_for('add_to_cart') }}" style="display:inline;">
+                            <input type="hidden" name="product_id" value="{{ item.product_id }}">
+                            <button type="submit" class="btn btn-primary btn-sm" title="Add to Cart">
+                                <i class="fas fa-shopping-cart"></i> Add to Cart
+                            </button>
+                        </form>
+                        <button class="wishlist-heart-btn" data-product-id="{{ item.product_id }}" title="Remove from Wishlist">
+                            <i class="fas fa-heart"></i>
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+
+                <div class="wishlist-actions">
+                    <a href="{{ url_for('products') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Continue Shopping
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="empty-wishlist">
+            <i class="fas fa-heart"></i>
+            <h3>Your wishlist is empty</h3>
+            <p>Looks like you haven't added any products to your wishlist yet.</p>
+            <a href="{{ url_for('products') }}" class="btn btn-primary btn-lg">
+                <i class="fas fa-shopping-bag"></i> Start Shopping
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+<style>
+.wishlist-layout {
+    display: grid;
+    gap: 30px;
+}
+
+.wishlist-items-wrapper {
+    display: grid;
+    gap: 20px;
+}
+
+.wishlist-item {
+    display: grid;
+    grid-template-columns: 120px 1fr auto;
+    gap: 20px;
+    padding: 20px;
+    background: var(--white);
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    align-items: start;
+    transition: all 0.3s ease;
+}
+
+.wishlist-item:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.wishlist-item-img {
+    width: 120px;
+    height: 120px;
+    overflow: hidden;
+    border-radius: 6px;
+    background: #f5f5f5;
+}
+
+.wishlist-item-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.wishlist-item-details {
+    display: grid;
+    gap: 8px;
+}
+
+.wishlist-item-category {
+    font-size: 0.75rem;
+    color: #999;
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 1px;
+}
+
+.wishlist-item-details h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.wishlist-item-details h4 a {
+    color: var(--dark);
+    text-decoration: none;
+}
+
+.wishlist-item-details h4 a:hover {
+    color: var(--primary);
+}
+
+.wishlist-item-rating {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+}
+
+.rating-stars {
+    display: flex;
+    gap: 2px;
+    color: #ffc107;
+    font-size: 0.8rem;
+}
+
+.wishlist-item-price {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.price-current {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--primary);
+}
+
+.price-original {
+    font-size: 0.9rem;
+    color: #999;
+    text-decoration: line-through;
+}
+
+.price-discount {
+    font-size: 0.75rem;
+    background: var(--success);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-weight: 600;
+}
+
+.wishlist-item-actions {
+    display: flex;
+    gap: 10px;
+    align-items: start;
+    flex-direction: column;
+    position: relative;
+}
+
+.wishlist-item-actions .btn {
+    white-space: nowrap;
+    width: 100%;
+}
+
+.wishlist-heart-btn {
+    background: none;
+    border: 2px solid #e74c3c;
+    color: #e74c3c;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    padding: 0;
+}
+
+.wishlist-heart-btn:hover {
+    background: #e74c3c;
+    color: white;
+}
+
+.wishlist-heart-btn.removing {
+    animation: removeHeart 0.5s ease forwards;
+}
+
+@keyframes removeHeart {
+    0% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.5;
+    }
+    100% {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+}
+
+.wishlist-actions {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #e0e0e0;
+}
+
+.empty-wishlist {
+    text-align: center;
+    padding: 60px 20px;
+}
+
+.empty-wishlist i {
+    font-size: 64px;
+    color: #ddd;
+    margin-bottom: 20px;
+}
+
+.empty-wishlist h3 {
+    font-size: 1.5rem;
+    color: var(--dark);
+    margin: 20px 0;
+}
+
+.empty-wishlist p {
+    color: #999;
+    margin-bottom: 30px;
+}
+
+@media (max-width: 768px) {
+    .wishlist-item {
+        grid-template-columns: 100px 1fr;
+        gap: 15px;
+    }
+
+    .wishlist-item-img {
+        width: 100px;
+        height: 100px;
+    }
+
+    .wishlist-item-actions {
+        grid-column: 1 / -1;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .wishlist-item-actions .btn {
+        flex: 1;
+    }
+}
+
+@media (max-width: 540px) {
+    .wishlist-item {
+        grid-template-columns: 1fr;
+        padding: 16px;
+        gap: 12px;
+    }
+
+    .wishlist-item-img {
+        width: 92px;
+        height: 92px;
+    }
+
+    .wishlist-item-actions {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+    }
+
+    .wishlist-item-actions .btn {
+        width: 100%;
+    }
+
+    .wishlist-heart-btn {
+        width: 42px;
+        height: 42px;
+        align-self: flex-start;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const wishlistHeartBtns = document.querySelectorAll('.wishlist-heart-btn');
+    
+    wishlistHeartBtns.forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const productId = this.dataset.productId;
+            const wishlistItem = document.getElementById(`wishlistItem${productId}`);
+            
+            // Create form data
+            const formData = new FormData();
+            formData.append('product_id', productId);
+            
+            // Send request to remove from wishlist
+            fetch('{{ url_for("remove_from_wishlist") }}', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Add removing animation
+                    this.classList.add('removing');
+                    wishlistItem.style.opacity = '0.5';
+                    
+                    // Remove item after animation
+                    setTimeout(() => {
+                        wishlistItem.remove();
+                        
+                        // Check if wishlist is empty
+                        const remainingItems = document.querySelectorAll('.wishlist-item');
+                        if (remainingItems.length === 0) {
+                            location.reload();
+                        }
+                    }, 500);
+                } else {
+                    alert(data.message || 'Error removing from wishlist');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error removing from wishlist');
+            });
+        });
+    });
+});
+</script>
+
+{% endblock %}

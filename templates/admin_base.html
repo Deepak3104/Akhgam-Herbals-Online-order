@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ admin_page_title + ' - Admin' if admin_page_title else 'Admin Panel' }} | {{ site_name }}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="admin-theme">
+
+<!-- Admin Header -->
+<header class="admin-header">
+    <div class="admin-nav-wrapper">
+        <!-- Logo & Brand -->
+        <a href="{{ url_for('admin_dashboard') }}" class="admin-brand">
+            <img src="{{ url_for('static', filename='images/logo-light.png') }}" alt="Akhgam" class="admin-brand-img">
+            <div class="admin-brand-text">
+                <span class="admin-brand-name">Akhgam</span>
+                <span class="admin-brand-badge">Admin Panel</span>
+            </div>
+        </a>
+
+        <!-- Main Navigation -->
+        <nav class="admin-nav" id="adminNav" aria-label="Admin navigation">
+            <button class="admin-mobile-close" id="adminNavClose" type="button" aria-label="Close navigation menu">
+                <i class="fas fa-times"></i>
+            </button>
+            <a href="{{ url_for('admin_dashboard') }}" class="admin-nav-link {{ 'active' if request.endpoint == 'admin_dashboard' }}">
+                <i class="fas fa-tachometer-alt"></i> <span>Dashboard</span>
+            </a>
+            <a href="{{ url_for('admin_manage_products') }}" class="admin-nav-link {{ 'active' if request.endpoint == 'admin_manage_products' }}">
+                <i class="fas fa-box-open"></i> <span>Products</span>
+            </a>
+            <a href="{{ url_for('admin_manage_offers') }}" class="admin-nav-link {{ 'active' if request.endpoint == 'admin_manage_offers' }}">
+                <i class="fas fa-bullhorn"></i> <span>Offers</span>
+            </a>
+            <a href="{{ url_for('admin_manage_users') }}" class="admin-nav-link {{ 'active' if request.endpoint == 'admin_manage_users' }}">
+                <i class="fas fa-users"></i> <span>Users</span>
+            </a>
+            <a href="{{ url_for('admin_orders') }}" class="admin-nav-link {{ 'active' if request.endpoint in ['admin_orders', 'admin_order_detail'] }}">
+                <i class="fas fa-shopping-bag"></i> <span>Orders</span>
+            </a>
+            <a href="{{ url_for('index') }}" class="admin-nav-link" target="_blank">
+                <i class="fas fa-external-link-alt"></i> <span>View Site</span>
+            </a>
+        </nav>
+
+        <!-- Right Actions -->
+        <div class="admin-actions">
+            <button class="admin-action-btn" id="themeToggle" title="Toggle dark/light mode">
+                <i class="fas fa-moon" id="themeIcon"></i>
+            </button>
+
+            <!-- Admin Profile Dropdown -->
+            <div class="admin-profile-dropdown" id="adminProfileDropdown">
+                <button class="admin-profile-btn" id="adminProfileBtn">
+                    {% if user_profile_image %}
+                        <img src="{{ url_for('static', filename='uploads/profiles/' + user_profile_image) }}" alt="{{ user_name }}" class="admin-profile-img">
+                    {% else %}
+                        <div class="admin-profile-avatar">
+                            <i class="fas fa-user-shield"></i>
+                        </div>
+                    {% endif %}
+                    <div class="admin-profile-info">
+                        <span class="admin-profile-name">{{ user_name or 'Admin' }}</span>
+                        <span class="admin-profile-role">Administrator</span>
+                    </div>
+                    <i class="fas fa-chevron-down admin-profile-chevron"></i>
+                </button>
+                <div class="admin-profile-menu" id="adminProfileMenu">
+                    <a href="{{ url_for('admin_profile') }}" class="admin-profile-menu-item">
+                        <i class="fas fa-user-cog"></i> My Profile
+                    </a>
+                    <a href="{{ url_for('admin_dashboard') }}" class="admin-profile-menu-item">
+                        <i class="fas fa-cog"></i> Settings
+                    </a>
+                    <div class="admin-profile-menu-divider"></div>
+                    <a href="{{ url_for('admin_logout') }}" class="admin-profile-menu-item admin-profile-menu-logout">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </a>
+                </div>
+            </div>
+
+            <button class="admin-mobile-toggle" id="adminNavToggle" type="button" aria-label="Open navigation menu" aria-controls="adminNav" aria-expanded="false">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </div>
+</header>
+
+<button class="admin-nav-backdrop" id="adminNavBackdrop" type="button" aria-label="Close navigation menu"></button>
+
+<!-- Flash Messages -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        <div class="container" style="padding-top:20px;">
+        {% for category, message in messages %}
+            <div class="alert alert-{{ 'success' if category == 'success' else 'error' }}">
+                <i class="fas fa-{{ 'check-circle' if category == 'success' else 'exclamation-circle' }}"></i> {{ message }}
+            </div>
+        {% endfor %}
+        </div>
+    {% endif %}
+{% endwith %}
+
+{% block content %}{% endblock %}
+
+<script>
+(function() {
+    var saved = localStorage.getItem('theme');
+    if (saved === 'dark') {
+        document.documentElement.setAttribute('data-theme', 'dark');
+    }
+})();
+</script>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

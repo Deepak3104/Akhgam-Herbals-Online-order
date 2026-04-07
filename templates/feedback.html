@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- Page Header -->
+<div class="page-header">
+    <div class="container">
+        <h2>Customer Feedback</h2>
+        <p>See what customers are saying about our products</p>
+        <div class="breadcrumb">
+            <a href="{{ url_for('index') }}">Home</a>
+            <i class="fas fa-chevron-right" style="font-size:0.7rem;"></i>
+            <span>Feedback</span>
+        </div>
+    </div>
+</div>
+
+<section class="reviews-section">
+    <div class="container">
+        <div class="review-summary-bar">
+            <div class="review-avg">
+                <span class="review-avg-number">{{ review_avg }}</span>
+                <div>
+                    <div class="review-avg-stars">{{ generate_stars(review_avg)|safe }}</div>
+                    <span class="review-avg-count">Based on {{ review_count }} review{{ 's' if review_count != 1 else '' }}</span>
+                </div>
+            </div>
+            <a href="{{ url_for('products') }}" class="btn btn-primary">
+                <i class="fas fa-comment-dots"></i> Give Feedback
+            </a>
+        </div>
+
+        {% if reviews %}
+        <div class="reviews-list">
+            {% for review in reviews %}
+            <div class="review-card">
+                <div class="review-header">
+                    <div class="review-user">
+                        <div class="review-avatar">{{ review.name[0]|upper }}</div>
+                        <div>
+                            <strong class="review-author">{{ review.name }}</strong>
+                            {% if review.created_at %}
+                                <span class="review-date">{{ review.created_at.strftime('%d %b %Y') }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="review-rating-badge">
+                        {{ review.rating }} <i class="fas fa-star"></i>
+                    </div>
+                </div>
+                <p class="review-comment">{{ review.message }}</p>
+                {% if review.product_id and review.product_name %}
+                    <p class="reviewed-product">for <a href="{{ url_for('product_details', product_id=review.product_id) }}">{{ review.product_name }}</a></p>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="dashboard-content" style="text-align:center; max-width:700px; margin:0 auto;">
+            <p style="color:var(--gray); margin-bottom:15px;">No reviews yet. Be the first to share your experience.</p>
+            <a href="{{ url_for('products') }}" class="btn btn-primary">
+                <i class="fas fa-comment-dots"></i> Add First Feedback
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+{% endblock %}

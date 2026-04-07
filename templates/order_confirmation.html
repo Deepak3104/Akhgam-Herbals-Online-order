@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- Page Header -->
+<div class="page-header">
+    <div class="container">
+        <h2>Order Confirmed!</h2>
+        <p>Thank you for your purchase</p>
+    </div>
+</div>
+
+<section class="section">
+    <div class="container" style="max-width:700px;">
+        <div class="order-confirmation-card">
+            <div class="confirmation-icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <h2>Thank You!</h2>
+            <p>Your order has been placed successfully.</p>
+
+            <div class="confirmation-details">
+                <div class="detail-row">
+                    <span>Order Number</span>
+                    <strong>{{ order.order_number }}</strong>
+                </div>
+                <div class="detail-row">
+                    <span>Date</span>
+                    <strong>{{ order.created_at.strftime('%d %b %Y, %I:%M %p') }}</strong>
+                </div>
+                <div class="detail-row">
+                    <span>Payment Method</span>
+                    <strong>{{ order.payment_method|upper }}</strong>
+                </div>
+                <div class="detail-row">
+                    <span>Total Amount</span>
+                    <strong style="color:var(--primary); font-size:1.2rem;">₹{{ order.total_amount|number_format }}</strong>
+                </div>
+                <div class="detail-row">
+                    <span>Status</span>
+                    <span class="order-status status-{{ order.status }}">{{ order.status|capitalize }}</span>
+                </div>
+            </div>
+
+            <div class="confirmation-address">
+                <h4><i class="fas fa-truck"></i> Shipping To</h4>
+                <p><strong>{{ order.shipping_name }}</strong></p>
+                <p>{{ order.shipping_address }}</p>
+                <p>{{ order.shipping_pincode }}</p>
+                <p>{{ order.shipping_phone }}</p>
+            </div>
+
+            <h4 style="margin:25px 0 15px; font-family:var(--font-body);">Items Ordered</h4>
+            <div class="checkout-items" style="margin-bottom:20px;">
+                {% for item in items %}
+                <div class="checkout-item">
+                    <div class="checkout-item-info" style="flex:1;">
+                        <span class="checkout-item-name">{{ item.product_name }}</span>
+                        <span class="checkout-item-qty">Qty: {{ item.quantity }} x ₹{{ item.product_price|number_format }}</span>
+                    </div>
+                    <div class="checkout-item-price">₹{{ item.subtotal|number_format }}</div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
+                <a href="{{ url_for('my_orders') }}" class="btn btn-primary">
+                    <i class="fas fa-list"></i> View My Orders
+                </a>
+                <a href="{{ url_for('products') }}" class="btn btn-secondary">
+                    <i class="fas fa-shopping-bag"></i> Continue Shopping
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% endblock %}

@@ -1,0 +1,264 @@
+{% extends "admin_base.html" %}
+{% block content %}
+
+<section class="dashboard-section">
+    <div class="container">
+
+        {% if success %}
+            <div class="alert alert-success"><i class="fas fa-check-circle"></i> {{ success }}</div>
+        {% endif %}
+        {% if error %}
+            <div class="alert alert-error"><i class="fas fa-exclamation-circle"></i> {{ error }}</div>
+        {% endif %}
+
+        {% if action == 'list' %}
+            <!-- Offers List -->
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px; flex-wrap:wrap; gap:15px;">
+                <h2 style="font-family:var(--font-body); font-size:1.4rem;">
+                    <i class="fas fa-bullhorn" style="color:var(--primary);"></i> Manage Offers
+                </h2>
+                <a href="{{ url_for('admin_manage_offers', action='add') }}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Add New Offer
+                </a>
+            </div>
+
+            <div class="dashboard-content" style="overflow-x:auto;">
+                {% if offers %}
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Label</th>
+                                <th>Description</th>
+                                <th>Icon</th>
+                                <th>Order</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for offer in offers %}
+                                <tr>
+                                    <td>#{{ offer.id }}</td>
+                                    <td><strong>{{ offer.label }}</strong></td>
+                                    <td>{{ offer.description[:50] }}{% if offer.description|length > 50 %}...{% endif %}</td>
+                                    <td><i class="{{ offer.icon }}" style="color:var(--primary); font-size:1.2rem;"></i></td>
+                                    <td><input type="text" value="{{ offer.sort_order }}" style="width:50px; padding:5px; border:1px solid var(--border); border-radius:4px;" readonly></td>
+                                    <td><span class="status-{{ offer.status }}">{{ offer.status|capitalize }}</span></td>
+                                    <td>
+                                        <div class="action-btns">
+                                            <a href="{{ url_for('admin_manage_offers', action='edit', id=offer.id) }}" class="btn-action btn-edit" title="Edit">
+                                                <i class="fas fa-pen"></i>
+                                            </a>
+                                            <a href="{{ url_for('admin_manage_offers', toggle=offer.id) }}" class="btn-action btn-toggle" title="Toggle Status">
+                                                <i class="fas fa-power-off"></i>
+                                            </a>
+                                            <a href="{{ url_for('admin_manage_offers', delete=offer.id) }}" class="btn-action btn-delete" title="Delete" onclick="return confirm('Are you sure you want to delete this offer?');">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <p class="text-center" style="padding:40px; color:var(--gray-light);">No offers found. <a href="{{ url_for('admin_manage_offers', action='add') }}" style="color:var(--primary);">Add your first offer</a></p>
+                {% endif %}
+            </div>
+
+        {% elif action in ('add', 'edit') %}
+            <!-- Add / Edit Form -->
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px;">
+                <h2 style="font-family:var(--font-body); font-size:1.4rem;">
+                    <i class="fas fa-{{ 'plus' if action == 'add' else 'pen' }}" style="color:var(--primary);"></i>
+                    {{ 'Add New Offer' if action == 'add' else 'Edit Offer' }}
+                </h2>
+                <a href="{{ url_for('admin_manage_offers') }}" class="btn btn-secondary btn-sm">
+                    <i class="fas fa-arrow-left"></i> Back to List
+                </a>
+            </div>
+
+            <div class="admin-form-container">
+                <form method="POST" data-validate>
+                    {% if edit_offer %}
+                        <input type="hidden" name="edit_id" value="{{ edit_offer.id }}">
+                    {% endif %}
+
+                    <div class="form-group">
+                        <label>Offer Label (Code/Title) *</label>
+                        <input type="text" name="label" placeholder="e.g., HERBAL10, Free Shipping, BUY2GET1" required value="{{ edit_offer.label if edit_offer else '' }}" maxlength="50">
+                        <small style="color:var(--gray-light);">Short name or coupon code for this offer</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Description *</label>
+                        <textarea name="description" placeholder="e.g., Get 10% off on your order" required maxlength="200">{{ edit_offer.description if edit_offer else '' }}</textarea>
+                        <small style="color:var(--gray-light);">What customers will see about this offer</small>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Font Awesome Icon</label>
+                            <input type="text" name="icon" placeholder="e.g., fas fa-tag, fas fa-gift, fas fa-star" value="{{ edit_offer.icon if edit_offer else 'fas fa-tag' }}">
+                            <small style="color:var(--gray-light);">
+                                <a href="https://fontawesome.com/icons" target="_blank" style="color:var(--primary);">Browse icons here</a>
+                            </small>
+                        </div>
+                        <div class="form-group">
+                            <label>Display Order</label>
+                            <input type="number" name="sort_order" min="0" value="{{ edit_offer.sort_order if edit_offer else 0 }}">
+                            <small style="color:var(--gray-light);">Lower numbers appear first</small>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Status</label>
+                        <select name="status">
+                            <option value="active" {{ 'selected' if not edit_offer or edit_offer.status == 'active' }}>Active</option>
+                            <option value="inactive" {{ 'selected' if edit_offer and edit_offer.status == 'inactive' }}>Inactive</option>
+                        </select>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-{{ 'plus' if action == 'add' else 'check' }}"></i>
+                            {{ 'Add Offer' if action == 'add' else 'Update Offer' }}
+                        </button>
+                        <a href="{{ url_for('admin_manage_offers') }}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+
+        {% endif %}
+
+    </div>
+</section>
+
+<style>
+.admin-form-container {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 30px;
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+.form-actions {
+    display: flex;
+    gap: 15px;
+    margin-top: 30px;
+    flex-wrap: wrap;
+}
+
+.form-actions button,
+.form-actions a {
+    flex: 1;
+    min-width: 150px;
+}
+
+.action-btns {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: none;
+    text-decoration: none;
+}
+
+.btn-edit {
+    background: var(--primary-bg);
+    color: var(--primary);
+}
+
+.btn-edit:hover {
+    background: var(--primary);
+    color: white;
+}
+
+.btn-toggle {
+    background: var(--accent-bg);
+    color: var(--accent);
+}
+
+.btn-toggle:hover {
+    background: var(--accent);
+    color: white;
+}
+
+.btn-delete {
+    background: #fee;
+    color: #c33;
+}
+
+.btn-delete:hover {
+    background: #c33;
+    color: white;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.data-table thead {
+    background: var(--primary-bg);
+    color: var(--primary);
+    font-weight: 600;
+}
+
+.data-table th {
+    padding: 15px;
+    text-align: left;
+    font-size: 0.9rem;
+}
+
+.data-table td {
+    padding: 15px;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.95rem;
+}
+
+.data-table tbody tr:hover {
+    background: var(--primary-bg);
+}
+
+.status-active {
+    display: inline-block;
+    background: #e8f5e9;
+    color: #2e7d32;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.status-inactive {
+    display: inline-block;
+    background: #ffe8e8;
+    color: #c33;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+</style>
+
+{% endblock %}

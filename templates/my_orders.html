@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- Page Header -->
+<div class="page-header">
+    <div class="container">
+        <h2>My Orders</h2>
+        <p>Track and manage your orders</p>
+        <div class="breadcrumb">
+            <a href="{{ url_for('index') }}">Home</a>
+            <i class="fas fa-chevron-right" style="font-size:0.7rem;"></i>
+            <a href="{{ url_for('dashboard') }}">Dashboard</a>
+            <i class="fas fa-chevron-right" style="font-size:0.7rem;"></i>
+            <span>My Orders</span>
+        </div>
+    </div>
+</div>
+
+<section class="section">
+    <div class="container">
+        {% if orders %}
+        <div class="orders-list">
+            {% for order in orders %}
+            <div class="order-card">
+                <div class="order-card-header">
+                    <div class="order-info">
+                        <h4>{{ order.order_number }}</h4>
+                        <span class="order-date">{{ order.created_at.strftime('%d %b %Y, %I:%M %p') }}</span>
+                    </div>
+                    <div class="order-status status-{{ order.status }}">
+                        {{ order.status|capitalize }}
+                    </div>
+                </div>
+                <div class="order-card-body">
+                    <div class="order-meta">
+                        <div><i class="fas fa-box"></i> {{ order.item_count }} item{{ 's' if order.item_count != 1 else '' }}</div>
+                        <div><i class="fas fa-credit-card"></i> {{ order.payment_method|upper }}</div>
+                        <div><i class="fas fa-map-marker-alt"></i> {{ order.shipping_pincode }}</div>
+                    </div>
+                    <div class="order-total">
+                        <span>₹{{ order.total_amount|number_format }}</span>
+                    </div>
+                </div>
+                <div class="order-card-footer">
+                    <a href="{{ url_for('order_detail', order_number=order.order_number) }}" class="btn btn-secondary btn-sm">
+                        <i class="fas fa-eye"></i> View Details
+                    </a>
+                    {% if order.status == 'pending' %}
+                    <form method="POST" action="{{ url_for('cancel_order', order_number=order.order_number) }}" style="display:inline-block; margin-left:8px;"
+                          onsubmit="return confirm('Cancel this order? This action cannot be undone.');">
+                        <button type="submit" class="btn btn-danger btn-sm">
+                            <i class="fas fa-times-circle"></i> Cancel Order
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-cart">
+            <i class="fas fa-shopping-bag"></i>
+            <h3>No orders yet</h3>
+            <p>You haven't placed any orders. Start shopping now!</p>
+            <a href="{{ url_for('products') }}" class="btn btn-primary btn-lg">
+                <i class="fas fa-shopping-bag"></i> Browse Products
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+{% endblock %}

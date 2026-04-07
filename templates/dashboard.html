@@ -1,0 +1,281 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- Page Header -->
+<div class="page-header" style="padding: 40px 0;">
+    <div class="container">
+        <h2>Welcome, {{ user.name }}!</h2>
+        <p>Manage your account and explore our products</p>
+    </div>
+</div>
+
+<section class="dashboard-section">
+    <div class="container">
+        <div class="dashboard-grid">
+            <!-- Sidebar -->
+            <div class="dashboard-sidebar">
+                <div class="user-info">
+                    <div class="user-avatar-container">
+                        {% if user.profile_image %}
+                            <img src="{{ url_for('static', filename='uploads/profiles/' + user.profile_image) }}" alt="{{ user.name }}" class="user-avatar-img">
+                        {% else %}
+                            <div class="user-avatar">
+                                {{ user.name[0]|upper }}
+                            </div>
+                        {% endif %}
+                        <label class="avatar-upload-btn" for="avatarUploadTrigger" title="Change photo">
+                            <i class="fas fa-camera"></i>
+                        </label>
+                    </div>
+                    <h4>{{ user.name }}</h4>
+                    <p>{{ user.email }}</p>
+                    <!-- Hidden quick profile image upload form -->
+                    <form method="POST" action="{{ url_for('update_profile') }}" enctype="multipart/form-data" id="quickAvatarForm" style="display:none;">
+                        <input type="hidden" name="name" value="{{ user.name }}">
+                        <input type="hidden" name="phone" value="{{ user.phone }}">
+                        <input type="hidden" name="age" value="{{ user.age or '' }}">
+                        <input type="hidden" name="gender" value="{{ user.gender or '' }}">
+                        <input type="hidden" name="address" value="{{ user.address or '' }}">
+                        <input type="hidden" name="state" value="{{ user.state or '' }}">
+                        <input type="hidden" name="district" value="{{ user.district or '' }}">
+                        <input type="hidden" name="pincode" value="{{ user.pincode or '' }}">
+                        <input type="file" name="profile_image" id="avatarUploadTrigger" accept="image/*" onchange="this.form.submit();">
+                    </form>
+                </div>
+                <ul>
+                    <li><a href="{{ url_for('dashboard') }}" class="active"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                    <li><a href="{{ url_for('my_orders') }}"><i class="fas fa-shopping-bag"></i> My Orders</a></li>
+                    <li><a href="{{ url_for('view_cart') }}"><i class="fas fa-shopping-cart"></i> Cart {% if cart_count > 0 %}<span style="background:var(--primary);color:#fff;padding:1px 7px;border-radius:10px;font-size:0.7rem;margin-left:5px;">{{ cart_count }}</span>{% endif %}</a></li>
+                    <li><a href="{{ url_for('view_wishlist') }}"><i class="fas fa-heart"></i> Wishlist</a></li>
+                    <li><a href="#" onclick="document.getElementById('editProfileSection').style.display='block'; document.getElementById('profileViewSection').style.display='none'; this.parentElement.querySelector('a').classList.add('active'); return false;"><i class="fas fa-user-edit"></i> Update Profile</a></li>
+                    <li><a href="{{ url_for('products') }}"><i class="fas fa-box-open"></i> Browse Products</a></li>
+                    <li><a href="{{ url_for('contact') }}"><i class="fas fa-headset"></i> Support</a></li>
+                    <li><a href="{{ url_for('logout') }}" style="color:var(--red);"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                    <li><a href="#" onclick="event.preventDefault(); document.getElementById('deleteAccountModal').classList.add('show');" style="color:#c62828; font-size:0.85rem;"><i class="fas fa-trash-alt"></i> Delete Account</a></li>
+                </ul>
+            </div>
+
+            <!-- Main Content -->
+            <div class="dashboard-content">
+                <h3 style="font-family: var(--font-body); font-size: 1.3rem; margin-bottom: 25px;">
+                    <i class="fas fa-tachometer-alt" style="color:var(--primary); margin-right:8px;"></i> Dashboard Overview
+                </h3>
+
+                <!-- Stats -->
+                <div class="dashboard-stats">
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-box-open"></i></div>
+                        <div class="stat-number" data-count="{{ product_count }}">{{ product_count }}</div>
+                        <div class="stat-label">Available Products</div>
+                    </div>
+                    <div class="stat-card accent">
+                        <div class="stat-icon"><i class="fas fa-shopping-bag"></i></div>
+                        <div class="stat-number">Online</div>
+                        <div class="stat-label">Easy Ordering</div>
+                    </div>
+                    <div class="stat-card pink">
+                        <div class="stat-icon"><i class="fas fa-percentage"></i></div>
+                        <div class="stat-number">Up to 40%</div>
+                        <div class="stat-label">Member Discounts</div>
+                    </div>
+                </div>
+
+                <!-- Profile Info -->
+                <div id="profileViewSection" style="margin-top:30px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; padding-bottom:10px; border-bottom:1px solid #eee;">
+                        <h4 style="font-family:var(--font-body); font-size:1.1rem;">
+                            <i class="fas fa-user" style="color:var(--primary); margin-right:8px;"></i> My Profile
+                        </h4>
+                        <button onclick="document.getElementById('editProfileSection').style.display='block'; document.getElementById('profileViewSection').style.display='none';" class="btn btn-secondary btn-sm" style="font-size:0.8rem;">
+                            <i class="fas fa-pen"></i> Edit Profile
+                        </button>
+                    </div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+                        <div>
+                            <label style="font-size:0.8rem; font-weight:600; color:#999; text-transform:uppercase; letter-spacing:1px;">Full Name</label>
+                            <p style="font-size:1rem; font-weight:500; margin-top:4px;">{{ user.name }}</p>
+                        </div>
+                        <div>
+                            <label style="font-size:0.8rem; font-weight:600; color:#999; text-transform:uppercase; letter-spacing:1px;">Email</label>
+                            <p style="font-size:1rem; font-weight:500; margin-top:4px;">{{ user.email }}</p>
+                        </div>
+                        <div>
+                            <label style="font-size:0.8rem; font-weight:600; color:#999; text-transform:uppercase; letter-spacing:1px;">Phone</label>
+                            <p style="font-size:1rem; font-weight:500; margin-top:4px;">{{ user.phone }}</p>
+                        </div>
+                        <div>
+                            <label style="font-size:0.8rem; font-weight:600; color:#999; text-transform:uppercase; letter-spacing:1px;">Age</label>
+                            <p style="font-size:1rem; font-weight:500; margin-top:4px;">{{ user.age or '—' }}</p>
+                        </div>
+                        <div>
+                            <label style="font-size:0.8rem; font-weight:600; color:#999; text-transform:uppercase; letter-spacing:1px;">Gender</label>
+                            <p style="font-size:1rem; font-weight:500; margin-top:4px;">{{ (user.gender or '—')|capitalize }}</p>
+                        </div>
+                        <div>
+                            <label style="font-size:0.8rem; font-weight:600; color:#999; text-transform:uppercase; letter-spacing:1px;">Address</label>
+                            <p style="font-size:1rem; font-weight:500; margin-top:4px;">{{ user.address or '—' }}</p>
+                        </div>
+                        <div>
+                            <label style="font-size:0.8rem; font-weight:600; color:#999; text-transform:uppercase; letter-spacing:1px;">Pincode</label>
+                            <p style="font-size:1rem; font-weight:500; margin-top:4px;">{{ user.pincode or '—' }}</p>
+                        </div>
+                        <div>
+                            <label style="font-size:0.8rem; font-weight:600; color:#999; text-transform:uppercase; letter-spacing:1px;">State</label>
+                            <p style="font-size:1rem; font-weight:500; margin-top:4px;">{{ user.state or '—' }}</p>
+                        </div>
+                        <div>
+                            <label style="font-size:0.8rem; font-weight:600; color:#999; text-transform:uppercase; letter-spacing:1px;">District</label>
+                            <p style="font-size:1rem; font-weight:500; margin-top:4px;">{{ user.district or '—' }}</p>
+                        </div>
+                        <div>
+                            <label style="font-size:0.8rem; font-weight:600; color:#999; text-transform:uppercase; letter-spacing:1px;">Member Since</label>
+                            <p style="font-size:1rem; font-weight:500; margin-top:4px;">{{ user.created_at.strftime('%B %d, %Y') }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Edit Profile Form (hidden by default) -->
+                <div id="editProfileSection" style="margin-top:30px; display:none;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; padding-bottom:10px; border-bottom:1px solid #eee;">
+                        <h4 style="font-family:var(--font-body); font-size:1.1rem;">
+                            <i class="fas fa-user-edit" style="color:var(--primary); margin-right:8px;"></i> Update Profile
+                        </h4>
+                        <button onclick="document.getElementById('editProfileSection').style.display='none'; document.getElementById('profileViewSection').style.display='block';" class="btn btn-secondary btn-sm" style="font-size:0.8rem;">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                    </div>
+
+                    <form method="POST" action="{{ url_for('update_profile') }}" enctype="multipart/form-data" style="max-width:600px;">
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
+                            <div class="form-group">
+                                <label style="font-size:0.85rem; font-weight:600; color:#555; margin-bottom:6px; display:block;">Full Name *</label>
+                                <input type="text" name="name" value="{{ user.name }}" required
+                                    style="width:100%; padding:10px 12px; border:1px solid #e0e0e0; border-radius:8px; font-family:var(--font-body); font-size:0.9rem;">
+                            </div>
+                            <div class="form-group">
+                                <label style="font-size:0.85rem; font-weight:600; color:#555; margin-bottom:6px; display:block;">Email</label>
+                                <input type="email" value="{{ user.email }}" disabled
+                                    style="width:100%; padding:10px 12px; border:1px solid #e0e0e0; border-radius:8px; font-family:var(--font-body); font-size:0.9rem; background:#f5f5f5; color:#999; cursor:not-allowed;">
+                                <small style="font-size:0.7rem; color:#aaa;">Email cannot be changed</small>
+                            </div>
+                            <div class="form-group">
+                                <label style="font-size:0.85rem; font-weight:600; color:#555; margin-bottom:6px; display:block;">Phone *</label>
+                                <input type="tel" name="phone" value="{{ user.phone }}" required
+                                    style="width:100%; padding:10px 12px; border:1px solid #e0e0e0; border-radius:8px; font-family:var(--font-body); font-size:0.9rem;">
+                            </div>
+                            <div class="form-group">
+                                <label style="font-size:0.85rem; font-weight:600; color:#555; margin-bottom:6px; display:block;">Age</label>
+                                <input type="number" name="age" value="{{ user.age or '' }}" min="1" max="120"
+                                    style="width:100%; padding:10px 12px; border:1px solid #e0e0e0; border-radius:8px; font-family:var(--font-body); font-size:0.9rem;">
+                            </div>
+                            <div class="form-group">
+                                <label style="font-size:0.85rem; font-weight:600; color:#555; margin-bottom:6px; display:block;">Gender</label>
+                                <select name="gender"
+                                    style="width:100%; padding:10px 12px; border:1px solid #e0e0e0; border-radius:8px; font-family:var(--font-body); font-size:0.9rem; background:#fff;">
+                                    <option value="">Select Gender</option>
+                                    <option value="male" {{ 'selected' if user.gender == 'male' }}>Male</option>
+                                    <option value="female" {{ 'selected' if user.gender == 'female' }}>Female</option>
+                                    <option value="other" {{ 'selected' if user.gender == 'other' }}>Other</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label style="font-size:0.85rem; font-weight:600; color:#555; margin-bottom:6px; display:block;">Pincode</label>
+                                <input type="text" name="pincode" value="{{ user.pincode or '' }}" maxlength="10"
+                                    style="width:100%; padding:10px 12px; border:1px solid #e0e0e0; border-radius:8px; font-family:var(--font-body); font-size:0.9rem;">
+                            </div>
+                            <div class="form-group">
+                                <label style="font-size:0.85rem; font-weight:600; color:#555; margin-bottom:6px; display:block;">State</label>
+                                <input type="text" name="state" value="{{ user.state or '' }}"
+                                    style="width:100%; padding:10px 12px; border:1px solid #e0e0e0; border-radius:8px; font-family:var(--font-body); font-size:0.9rem;">
+                            </div>
+                            <div class="form-group">
+                                <label style="font-size:0.85rem; font-weight:600; color:#555; margin-bottom:6px; display:block;">District</label>
+                                <input type="text" name="district" value="{{ user.district or '' }}"
+                                    style="width:100%; padding:10px 12px; border:1px solid #e0e0e0; border-radius:8px; font-family:var(--font-body); font-size:0.9rem;">
+                            </div>
+                        </div>
+
+                        <div class="form-group" style="margin-top:15px;">
+                            <label style="font-size:0.85rem; font-weight:600; color:#555; margin-bottom:6px; display:block;">Address</label>
+                            <textarea name="address" rows="3" placeholder="Enter your full address"
+                                style="width:100%; padding:10px 12px; border:1px solid #e0e0e0; border-radius:8px; font-family:var(--font-body); font-size:0.9rem; resize:vertical;">{{ user.address or '' }}</textarea>
+                        </div>
+
+                        <!-- Profile Image Upload -->
+                        <div class="form-group" style="margin-top:15px;">
+                            <label style="font-size:0.85rem; font-weight:600; color:#555; margin-bottom:6px; display:block;">
+                                <i class="fas fa-camera" style="color:var(--primary); margin-right:5px;"></i> Profile Photo
+                            </label>
+                            <div style="display:flex; align-items:center; gap:15px;">
+                                {% if user.profile_image %}
+                                    <img src="{{ url_for('static', filename='uploads/profiles/' + user.profile_image) }}" alt="Current" style="width:60px; height:60px; border-radius:50%; object-fit:cover; border:2px solid var(--primary-lighter);">
+                                {% else %}
+                                    <div style="width:60px; height:60px; border-radius:50%; background:var(--primary-bg); display:flex; align-items:center; justify-content:center; font-size:1.4rem; font-weight:700; color:var(--primary);">
+                                        {{ user.name[0]|upper }}
+                                    </div>
+                                {% endif %}
+                                <div>
+                                    <input type="file" name="profile_image" accept="image/*" style="padding:8px; font-size:0.85rem;">
+                                    <small style="display:block; font-size:0.7rem; color:#aaa; margin-top:4px;">JPG, PNG, GIF, WEBP. Max 16MB.</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Change Password (optional) -->
+                        <div style="margin-top:25px; padding-top:20px; border-top:1px solid #eee;">
+                            <h4 style="font-family:var(--font-body); font-size:1rem; margin-bottom:15px; color:#555;">
+                                <i class="fas fa-lock" style="color:var(--accent); margin-right:8px;"></i> Change Password <span style="font-size:0.75rem; color:#aaa; font-weight:400;">(leave blank to keep current)</span>
+                            </h4>
+                            <div style="display:grid; grid-template-columns:1fr; gap:12px; max-width:300px;">
+                                <div class="form-group">
+                                    <label style="font-size:0.85rem; font-weight:600; color:#555; margin-bottom:6px; display:block;">Current Password</label>
+                                    <input type="password" name="current_password" placeholder="Enter current password"
+                                        style="width:100%; padding:10px 12px; border:1px solid #e0e0e0; border-radius:8px; font-family:var(--font-body); font-size:0.9rem;">
+                                </div>
+                                <div class="form-group">
+                                    <label style="font-size:0.85rem; font-weight:600; color:#555; margin-bottom:6px; display:block;">New Password</label>
+                                    <input type="password" name="new_password" placeholder="Min 6 characters"
+                                        style="width:100%; padding:10px 12px; border:1px solid #e0e0e0; border-radius:8px; font-family:var(--font-body); font-size:0.9rem;">
+                                </div>
+                                <div class="form-group">
+                                    <label style="font-size:0.85rem; font-weight:600; color:#555; margin-bottom:6px; display:block;">Confirm New Password</label>
+                                    <input type="password" name="confirm_new_password" placeholder="Re-enter new password"
+                                        style="width:100%; padding:10px 12px; border:1px solid #e0e0e0; border-radius:8px; font-family:var(--font-body); font-size:0.9rem;">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="margin-top:25px; display:flex; gap:12px;">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Save Changes
+                            </button>
+                            <button type="button" onclick="document.getElementById('editProfileSection').style.display='none'; document.getElementById('profileViewSection').style.display='block';" class="btn btn-secondary">
+                                Cancel
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Quick Actions -->
+                <div style="margin-top:30px;">
+                    <h4 style="font-family:var(--font-body); font-size:1.1rem; margin-bottom:20px; padding-bottom:10px; border-bottom:1px solid #eee;">
+                        <i class="fas fa-bolt" style="color:var(--accent); margin-right:8px;"></i> Quick Actions
+                    </h4>
+                    <div style="display:flex; gap:15px; flex-wrap:wrap;">
+                        <a href="{{ url_for('products') }}" class="btn btn-primary">
+                            <i class="fas fa-shopping-bag"></i> Browse Products
+                        </a>
+                        <a href="https://wa.me/{{ whatsapp_number }}?text={{ ('Hello Akhgam Herbals! I am ' + user.name + '. I need help with my order.')|quote_url }}" target="_blank" class="btn btn-whatsapp">
+                            <i class="fab fa-whatsapp"></i> Chat with Us
+                        </a>
+                        <a href="{{ url_for('contact') }}" class="btn btn-secondary">
+                            <i class="fas fa-envelope"></i> Contact Support
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% endblock %}

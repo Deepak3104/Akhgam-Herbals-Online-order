@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- Page Header -->
+<div class="page-header">
+    <div class="container">
+        <h2>Our Story</h2>
+        <p>The journey behind Akhgam Herbals</p>
+        <div class="breadcrumb">
+            <a href="{{ url_for('index') }}">Home</a>
+            <i class="fas fa-chevron-right" style="font-size:0.7rem;"></i>
+            <span>About Us</span>
+        </div>
+    </div>
+</div>
+
+<!-- About Section -->
+<section class="section">
+    <div class="container">
+        <div class="about-grid">
+            <div class="about-img">
+                <div class="no-image" style="height:500px; border-radius:20px; background:#f9ecec;">
+                    <img src="{{ url_for('static', filename='images/logo-light.png') }}" alt="Akhgam - Beauty Inside" style="width:280px;height:280px;">
+                </div>
+            </div>
+            <div class="about-content">
+                <h2>When Ayurveda Meets Modern Science</h2>
+                <p>At Akhgam Herbals, we believe that true beauty comes from nature. Our journey began with a simple mission — to bring the ancient wisdom of Ayurveda into modern skincare and wellness routines, making it accessible, effective, and safe for everyone.</p>
+                <p>Every product we create is a testament to our commitment to purity, quality, and sustainability. We source the finest herbs from across India — Kashmiri Saffron, Himalayan botanicals, rare Ayurvedic extracts — and combine them with scientifically-backed formulations to deliver visible, lasting results.</p>
+                <p>We are proud to be nasties-free. No parabens, no sulfates, no artificial fragrances, no harsh chemicals — just the pure power of nature working for your skin, hair, and body.</p>
+
+                <div class="about-features">
+                    <div class="about-feature">
+                        <div class="feature-icon"><i class="fas fa-leaf"></i></div>
+                        <div>
+                            <h5>100% Natural</h5>
+                            <p>Only natural, plant-based ingredients</p>
+                        </div>
+                    </div>
+                    <div class="about-feature">
+                        <div class="feature-icon"><i class="fas fa-flask"></i></div>
+                        <div>
+                            <h5>Lab Tested</h5>
+                            <p>Every batch is quality tested</p>
+                        </div>
+                    </div>
+                    <div class="about-feature">
+                        <div class="feature-icon"><i class="fas fa-heart"></i></div>
+                        <div>
+                            <h5>Cruelty Free</h5>
+                            <p>Never tested on animals</p>
+                        </div>
+                    </div>
+                    <div class="about-feature">
+                        <div class="feature-icon"><i class="fas fa-recycle"></i></div>
+                        <div>
+                            <h5>Eco-Friendly</h5>
+                            <p>Sustainable packaging</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Values Section -->
+<section class="section section-light">
+    <div class="container">
+        <div class="section-header">
+            <h2><em>Our Core Values</em></h2>
+            <p>What drives us every day</p>
+            <div class="divider"></div>
+        </div>
+
+        <div class="testimonials-grid">
+            <div class="testimonial-card" style="text-align:center;">
+                <div style="font-size:2.5rem; color:var(--primary); margin-bottom:15px;">
+                    <i class="fas fa-seedling"></i>
+                </div>
+                <h3 style="font-size:1.2rem; margin-bottom:10px;">Purity First</h3>
+                <p class="quote" style="font-style:normal;">We never compromise on ingredient quality. Every herb is carefully sourced and every formula is crafted with precision and care.</p>
+            </div>
+            <div class="testimonial-card" style="text-align:center;">
+                <div style="font-size:2.5rem; color:var(--primary); margin-bottom:15px;">
+                    <i class="fas fa-microscope"></i>
+                </div>
+                <h3 style="font-size:1.2rem; margin-bottom:10px;">Science-Backed</h3>
+                <p class="quote" style="font-style:normal;">Ancient Ayurvedic wisdom enhanced with modern scientific research to ensure our products deliver real, measurable results.</p>
+            </div>
+            <div class="testimonial-card" style="text-align:center;">
+                <div style="font-size:2.5rem; color:var(--primary); margin-bottom:15px;">
+                    <i class="fas fa-globe-asia"></i>
+                </div>
+                <h3 style="font-size:1.2rem; margin-bottom:10px;">Sustainability</h3>
+                <p class="quote" style="font-style:normal;">From eco-friendly packaging to responsible sourcing, we are committed to protecting the planet while nurturing your beauty.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Stats Section -->
+<section class="section">
+    <div class="container">
+        <div class="dashboard-stats" style="max-width:800px; margin:0 auto;">
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-box-open"></i></div>
+                <div class="stat-number">50+</div>
+                <div class="stat-label">Natural Products</div>
+            </div>
+            <div class="stat-card pink">
+                <div class="stat-icon"><i class="fas fa-leaf"></i></div>
+                <div class="stat-number">100+</div>
+                <div class="stat-label">Natural Ingredients</div>
+            </div>
+            <div class="stat-card info">
+                <div class="stat-icon"><i class="fas fa-star"></i></div>
+                <div class="stat-number">4.6</div>
+                <div class="stat-label">Average Rating</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% endblock %}

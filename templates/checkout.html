@@ -1,0 +1,462 @@
+{% extends "base.html" %}
+{% block content %}
+
+<section class="fk-checkout-wrap">
+    <div class="container fk-checkout-container">
+        <div class="fk-checkout-steps" aria-label="Checkout Progress">
+            <div class="fk-step is-active">
+                <span class="fk-step-num">1</span>
+                <span class="fk-step-label">Address</span>
+            </div>
+            <div class="fk-step-divider"></div>
+            <div class="fk-step is-active">
+                <span class="fk-step-num">2</span>
+                <span class="fk-step-label">Order Summary</span>
+            </div>
+            <div class="fk-step-divider"></div>
+            <div class="fk-step" id="fk-step-payment">
+                <span class="fk-step-num">3</span>
+                <span class="fk-step-label">Payment</span>
+            </div>
+        </div>
+
+        <form method="POST" action="{{ url_for('checkout') }}" id="checkoutForm">
+            <div class="fk-checkout-layout">
+                <div class="fk-checkout-left">
+                    <div class="fk-panel">
+                        <div class="fk-panel-head">
+                            <span class="fk-panel-badge">1</span>
+                            <h3>Delivery Address</h3>
+                        </div>
+
+                        <div class="fk-form-grid">
+                            <div class="form-group">
+                                <label>Full Name <span style="color:var(--red);">*</span></label>
+                                <input type="text" name="shipping_name" value="{{ user.name }}" required
+                                       placeholder="Enter full name" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label>Phone Number <span style="color:var(--red);">*</span></label>
+                                <input type="tel" name="shipping_phone" value="{{ user.phone }}" required
+                                       placeholder="Enter phone number" class="form-control">
+                            </div>
+                            <div class="form-group fk-span-2">
+                                <label>Email (optional)</label>
+                                <input type="email" name="shipping_email" value="{{ user.email }}"
+                                       placeholder="Enter email for order updates" class="form-control">
+                            </div>
+                            <div class="form-group fk-span-2">
+                                <label>Delivery Address <span style="color:var(--red);">*</span></label>
+                                <textarea name="shipping_address" rows="3" required
+                                          placeholder="House/Flat No., Street, Locality" class="form-control">{{ user.address or '' }}</textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>State <span style="color:var(--red);">*</span></label>
+                                <select name="shipping_state" id="shipping_state" required class="form-control">
+                                    <option value="">Select state</option>
+                                    <option value="Andhra Pradesh" {{ 'selected' if (user.state or '') == 'Andhra Pradesh' }}>Andhra Pradesh</option>
+                                    <option value="Arunachal Pradesh" {{ 'selected' if (user.state or '') == 'Arunachal Pradesh' }}>Arunachal Pradesh</option>
+                                    <option value="Assam" {{ 'selected' if (user.state or '') == 'Assam' }}>Assam</option>
+                                    <option value="Bihar" {{ 'selected' if (user.state or '') == 'Bihar' }}>Bihar</option>
+                                    <option value="Chhattisgarh" {{ 'selected' if (user.state or '') == 'Chhattisgarh' }}>Chhattisgarh</option>
+                                    <option value="Goa" {{ 'selected' if (user.state or '') == 'Goa' }}>Goa</option>
+                                    <option value="Gujarat" {{ 'selected' if (user.state or '') == 'Gujarat' }}>Gujarat</option>
+                                    <option value="Haryana" {{ 'selected' if (user.state or '') == 'Haryana' }}>Haryana</option>
+                                    <option value="Himachal Pradesh" {{ 'selected' if (user.state or '') == 'Himachal Pradesh' }}>Himachal Pradesh</option>
+                                    <option value="Jharkhand" {{ 'selected' if (user.state or '') == 'Jharkhand' }}>Jharkhand</option>
+                                    <option value="Karnataka" {{ 'selected' if (user.state or '') == 'Karnataka' }}>Karnataka</option>
+                                    <option value="Kerala" {{ 'selected' if (user.state or '') == 'Kerala' }}>Kerala</option>
+                                    <option value="Madhya Pradesh" {{ 'selected' if (user.state or '') == 'Madhya Pradesh' }}>Madhya Pradesh</option>
+                                    <option value="Maharashtra" {{ 'selected' if (user.state or '') == 'Maharashtra' }}>Maharashtra</option>
+                                    <option value="Manipur" {{ 'selected' if (user.state or '') == 'Manipur' }}>Manipur</option>
+                                    <option value="Meghalaya" {{ 'selected' if (user.state or '') == 'Meghalaya' }}>Meghalaya</option>
+                                    <option value="Mizoram" {{ 'selected' if (user.state or '') == 'Mizoram' }}>Mizoram</option>
+                                    <option value="Nagaland" {{ 'selected' if (user.state or '') == 'Nagaland' }}>Nagaland</option>
+                                    <option value="Odisha" {{ 'selected' if (user.state or '') == 'Odisha' }}>Odisha</option>
+                                    <option value="Punjab" {{ 'selected' if (user.state or '') == 'Punjab' }}>Punjab</option>
+                                    <option value="Rajasthan" {{ 'selected' if (user.state or '') == 'Rajasthan' }}>Rajasthan</option>
+                                    <option value="Sikkim" {{ 'selected' if (user.state or '') == 'Sikkim' }}>Sikkim</option>
+                                    <option value="Tamil Nadu" {{ 'selected' if (user.state or '') == 'Tamil Nadu' }}>Tamil Nadu</option>
+                                    <option value="Telangana" {{ 'selected' if (user.state or '') == 'Telangana' }}>Telangana</option>
+                                    <option value="Tripura" {{ 'selected' if (user.state or '') == 'Tripura' }}>Tripura</option>
+                                    <option value="Uttar Pradesh" {{ 'selected' if (user.state or '') == 'Uttar Pradesh' }}>Uttar Pradesh</option>
+                                    <option value="Uttarakhand" {{ 'selected' if (user.state or '') == 'Uttarakhand' }}>Uttarakhand</option>
+                                    <option value="West Bengal" {{ 'selected' if (user.state or '') == 'West Bengal' }}>West Bengal</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>District <span style="color:var(--red);">*</span></label>
+                                <select name="shipping_district" id="shipping_district" required class="form-control" data-selected-district="{{ user.district or '' }}">
+                                    <option value="">Select district</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Pincode <span style="color:var(--red);">*</span></label>
+                                <input type="text" name="shipping_pincode" value="{{ user.pincode or '' }}" required
+                                       maxlength="10" placeholder="Enter pincode" class="form-control">
+                            </div>
+                        </div>
+
+                        <div class="fk-continue-wrap">
+                            <button type="button" id="continueToPaymentBtn" class="fk-continue-btn">Continue to Payment</button>
+                        </div>
+                    </div>
+
+                    <div class="fk-panel is-hidden" id="paymentPanel">
+                        <div class="fk-panel-head">
+                            <span class="fk-panel-badge">2</span>
+                            <h3>Payment Options</h3>
+                        </div>
+
+                        <div class="fk-payment-list">
+                            <label class="fk-payment-option">
+                                <input type="radio" name="payment_method" value="cod" checked>
+                                <span>
+                                    <strong>Cash on Delivery</strong>
+                                    <small>Pay when your order is delivered</small>
+                                </span>
+                            </label>
+                            <label class="fk-payment-option">
+                                <input type="radio" name="payment_method" value="upi">
+                                <span>
+                                    <strong>UPI Payment</strong>
+                                    <small>Pay instantly via apps like PhonePe, Google Pay, Paytm, BHIM</small>
+                                </span>
+                            </label>
+                            <label class="fk-payment-option">
+                                <input type="radio" name="payment_method" value="card">
+                                <span>
+                                    <strong>Credit / Debit Card</strong>
+                                    <small>Use Visa, Mastercard, RuPay, or Amex cards</small>
+                                </span>
+                            </label>
+                            <label class="fk-payment-option">
+                                <input type="radio" name="payment_method" value="net_banking">
+                                <span>
+                                    <strong>Net Banking</strong>
+                                    <small>Pay through major private, public, and small finance banks</small>
+                                </span>
+                            </label>
+                            <label class="fk-payment-option">
+                                <input type="radio" name="payment_method" value="bank_transfer">
+                                <span>
+                                    <strong>Bank Transfer</strong>
+                                    <small>Use IMPS, NEFT, or RTGS from your bank account</small>
+                                </span>
+                            </label>
+                        </div>
+
+                        <div id="paymentDynamicBlocks" style="margin-top:16px;">
+                            <div class="fk-form-grid payment-dynamic-block" data-method="upi" style="display:none;">
+                                <div class="form-group">
+                                    <label>Preferred UPI App <span style="color:var(--red);">*</span></label>
+                                    <select name="upi_app" class="form-control" data-required-if-active="true">
+                                        <option value="">Select UPI app</option>
+                                        <option value="PhonePe">PhonePe</option>
+                                        <option value="Google Pay">Google Pay</option>
+                                        <option value="Paytm">Paytm</option>
+                                        <option value="BHIM UPI">BHIM UPI</option>
+                                        <option value="Amazon Pay UPI">Amazon Pay UPI</option>
+                                        <option value="Other UPI App">Other UPI App</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>UPI ID (optional)</label>
+                                    <input type="text" name="upi_id" class="form-control" placeholder="example@upi">
+                                </div>
+                            </div>
+
+                            <div class="fk-form-grid payment-dynamic-block" data-method="card" style="display:none;">
+                                <div class="form-group">
+                                    <label>Card Type <span style="color:var(--red);">*</span></label>
+                                    <select name="card_type" class="form-control" data-required-if-active="true">
+                                        <option value="">Select card type</option>
+                                        <option value="Credit Card">Credit Card</option>
+                                        <option value="Debit Card">Debit Card</option>
+                                        <option value="Prepaid Card">Prepaid Card</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Card Network <span style="color:var(--red);">*</span></label>
+                                    <select name="card_network" class="form-control" data-required-if-active="true">
+                                        <option value="">Select network</option>
+                                        <option value="Visa">Visa</option>
+                                        <option value="Mastercard">Mastercard</option>
+                                        <option value="RuPay">RuPay</option>
+                                        <option value="American Express">American Express</option>
+                                    </select>
+                                </div>
+                                <div class="form-group fk-span-2">
+                                    <label>Last 4 Digits (optional)</label>
+                                    <input type="text" name="card_last4" class="form-control" maxlength="4" pattern="[0-9]{4}" inputmode="numeric" placeholder="For reconciliation (optional)">
+                                </div>
+                            </div>
+
+                            <div class="fk-form-grid payment-dynamic-block" data-method="net_banking" style="display:none;">
+                                <div class="form-group">
+                                    <label>Bank Category <span style="color:var(--red);">*</span></label>
+                                    <select name="net_banking_tier" class="form-control" data-required-if-active="true">
+                                        <option value="">Select bank category</option>
+                                        <option value="Private Bank">Private Bank</option>
+                                        <option value="Public Sector Bank">Public Sector Bank</option>
+                                        <option value="Small Finance Bank">Small Finance Bank</option>
+                                        <option value="Payment Bank">Payment Bank</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Bank Name <span style="color:var(--red);">*</span></label>
+                                    <select name="net_banking_bank" class="form-control" data-required-if-active="true">
+                                        <option value="">Select bank</option>
+                                        <option value="State Bank of India">State Bank of India</option>
+                                        <option value="HDFC Bank">HDFC Bank</option>
+                                        <option value="ICICI Bank">ICICI Bank</option>
+                                        <option value="Axis Bank">Axis Bank</option>
+                                        <option value="Kotak Mahindra Bank">Kotak Mahindra Bank</option>
+                                        <option value="Bank of Baroda">Bank of Baroda</option>
+                                        <option value="Canara Bank">Canara Bank</option>
+                                        <option value="Punjab National Bank">Punjab National Bank</option>
+                                        <option value="Indian Bank">Indian Bank</option>
+                                        <option value="Other Bank">Other Bank</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="fk-form-grid payment-dynamic-block" data-method="bank_transfer" style="display:none;">
+                                <div class="form-group">
+                                    <label>Transfer Mode <span style="color:var(--red);">*</span></label>
+                                    <select name="transfer_mode" class="form-control" data-required-if-active="true">
+                                        <option value="">Select transfer mode</option>
+                                        <option value="IMPS">IMPS (Instant, 24x7)</option>
+                                        <option value="NEFT">NEFT (Batch settlement)</option>
+                                        <option value="RTGS">RTGS (High-value transfer)</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>From Bank <span style="color:var(--red);">*</span></label>
+                                    <input type="text" name="transfer_bank" class="form-control" data-required-if-active="true" placeholder="Enter your bank name">
+                                </div>
+                                <div class="form-group fk-span-2">
+                                    <label>Transaction Reference (optional)</label>
+                                    <input type="text" name="transfer_reference" class="form-control" placeholder="UTR / Reference number">
+                                </div>
+                            </div>
+
+                            <div style="margin-top:12px; padding:10px 12px; border:1px solid #e6d7de; border-radius:8px; background:#fff8fb; color:#7b2540; font-size:0.85rem;">
+                                Real-time usage categories help us reconcile payments faster and confirm orders quickly in production workflows.
+                            </div>
+                        </div>
+
+                        <div class="form-group" style="margin-top:16px;">
+                            <label>Order Notes (optional)</label>
+                            <textarea name="notes" rows="2" placeholder="Any special instructions for delivery..."
+                                      class="form-control"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <aside class="fk-checkout-right">
+                    <div class="fk-price-card">
+                        <h4>PRICE DETAILS</h4>
+
+                        <div class="fk-price-row">
+                            <span>Price ({{ cart_items|length }} item{% if cart_items|length != 1 %}s{% endif %})</span>
+                            <span>₹{{ subtotal|number_format }}</span>
+                        </div>
+                        <div class="fk-price-row">
+                            <span>Delivery Charges</span>
+                            <span>
+                                {% if shipping == 0 %}
+                                    <span style="color:#388e3c;">FREE</span>
+                                {% else %}
+                                    ₹{{ shipping|number_format }}
+                                {% endif %}
+                            </span>
+                        </div>
+
+                        <div class="fk-price-total">
+                            <span>Total Amount</span>
+                            <span>₹{{ total|number_format }}</span>
+                        </div>
+
+                        <p class="fk-price-save">Safe checkout with secure order processing</p>
+
+                        <button type="submit" id="placeOrderBtn" class="fk-place-btn" disabled>
+                            PLACE ORDER
+                        </button>
+
+                        <a href="{{ url_for('view_cart') }}" class="fk-back-link">
+                            <i class="fas fa-arrow-left"></i> Back to Cart
+                        </a>
+                    </div>
+
+                    <div class="fk-items-card">
+                        <h5>Order Items</h5>
+
+                        {% for item in cart_items %}
+                        <div class="fk-item-row">
+                            <div class="fk-item-img">
+                                {% if item.image and item.image != 'default.jpg' %}
+                                    <img src="{{ url_for('static', filename='uploads/products/' + item.image) }}" alt="{{ item.name }}">
+                                {% else %}
+                                    <div class="no-image" style="width:100%; height:100%;">
+                                        <i class="fas fa-leaf" style="font-size:1rem;"></i>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="fk-item-meta">
+                                <span class="fk-item-name">{{ item.name }}</span>
+                                <span class="fk-item-qty">Qty: {{ item.quantity }}</span>
+                            </div>
+                            <div class="fk-item-price">
+                                ₹{{ (item.price * item.quantity)|number_format }}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </aside>
+            </div>
+        </form>
+    </div>
+</section>
+
+<script>
+    (function () {
+        const districtMap = {
+            "Tamil Nadu": ["Ariyalur", "Chengalpattu", "Chennai", "Coimbatore", "Cuddalore", "Dharmapuri", "Dindigul", "Erode", "Kallakurichi", "Kancheepuram", "Karur", "Krishnagiri", "Madurai", "Mayiladuthurai", "Nagapattinam", "Namakkal", "Nilgiris", "Perambalur", "Pudukkottai", "Ramanathapuram", "Ranipet", "Salem", "Sivaganga", "Tenkasi", "Thanjavur", "Theni", "Thoothukudi", "Tiruchirappalli", "Tirunelveli", "Tirupathur", "Tiruppur", "Tiruvallur", "Tiruvannamalai", "Tiruvarur", "Vellore", "Viluppuram", "Virudhunagar"],
+            "Kerala": ["Alappuzha", "Ernakulam", "Idukki", "Kannur", "Kasaragod", "Kollam", "Kottayam", "Kozhikode", "Malappuram", "Palakkad", "Pathanamthitta", "Thiruvananthapuram", "Thrissur", "Wayanad"],
+            "Karnataka": ["Bagalkot", "Ballari", "Belagavi", "Bengaluru Rural", "Bengaluru Urban", "Bidar", "Chamarajanagar", "Chikballapur", "Chikkamagaluru", "Chitradurga", "Dakshina Kannada", "Davanagere", "Dharwad", "Gadag", "Hassan", "Haveri", "Kalaburagi", "Kodagu", "Kolar", "Koppal", "Mandya", "Mysuru", "Raichur", "Ramanagara", "Shivamogga", "Tumakuru", "Udupi", "Uttara Kannada", "Vijayapura", "Yadgir"],
+            "Andhra Pradesh": ["Anantapur", "Chittoor", "East Godavari", "Guntur", "Kadapa", "Krishna", "Kurnool", "Nellore", "Prakasam", "Srikakulam", "Visakhapatnam", "Vizianagaram", "West Godavari"],
+            "Telangana": ["Adilabad", "Bhadradri Kothagudem", "Hyderabad", "Jagtial", "Jangaon", "Jayashankar Bhupalpally", "Jogulamba Gadwal", "Kamareddy", "Karimnagar", "Khammam", "Komaram Bheem", "Mahabubabad", "Mahabubnagar", "Medak", "Medchal", "Nalgonda", "Nirmal", "Nizamabad", "Peddapalli", "Rajanna Sircilla", "Rangareddy", "Sangareddy", "Siddipet", "Suryapet", "Vikarabad", "Warangal", "Yadadri Bhuvanagiri"],
+            "Maharashtra": ["Ahmednagar", "Akola", "Amravati", "Aurangabad", "Beed", "Bhandara", "Buldhana", "Chandrapur", "Dhule", "Gadchiroli", "Gondia", "Hingoli", "Jalgaon", "Jalna", "Kolhapur", "Latur", "Mumbai City", "Mumbai Suburban", "Nagpur", "Nanded", "Nandurbar", "Nashik", "Osmanabad", "Palghar", "Parbhani", "Pune", "Raigad", "Ratnagiri", "Sangli", "Satara", "Sindhudurg", "Solapur", "Thane", "Wardha", "Washim", "Yavatmal"],
+            "Uttar Pradesh": ["Agra", "Aligarh", "Allahabad", "Ambedkar Nagar", "Amethi", "Amroha", "Auraiya", "Ayodhya", "Azamgarh", "Baghpat", "Bahraich", "Ballia", "Balrampur", "Banda", "Barabanki", "Bareilly", "Basti", "Bhadohi", "Bijnor", "Budaun", "Bulandshahr", "Chandauli", "Deoria", "Etah", "Etawah", "Farrukhabad", "Fatehpur", "Firozabad", "Gautam Buddha Nagar", "Ghaziabad", "Ghazipur", "Gonda", "Gorakhpur", "Hamirpur", "Hapur", "Hardoi", "Hathras", "Jalaun", "Jaunpur", "Jhansi", "Kannauj", "Kanpur Dehat", "Kanpur Nagar", "Kasganj", "Kaushambi", "Kushinagar", "Lakhimpur Kheri", "Lalitpur", "Lucknow", "Maharajganj", "Mahoba", "Mainpuri", "Mathura", "Mau", "Meerut", "Mirzapur", "Moradabad", "Muzaffarnagar", "Pilibhit", "Pratapgarh", "Raebareli", "Rampur", "Saharanpur", "Sambhal", "Sant Kabir Nagar", "Shahjahanpur", "Shamli", "Shravasti", "Siddharthnagar", "Sitapur", "Sonbhadra", "Sultanpur", "Unnao", "Varanasi"],
+            "West Bengal": ["Alipurduar", "Bankura", "Birbhum", "Cooch Behar", "Dakshin Dinajpur", "Darjeeling", "Hooghly", "Howrah", "Jalpaiguri", "Jhargram", "Kalimpong", "Kolkata", "Malda", "Murshidabad", "Nadia", "North 24 Parganas", "Paschim Bardhaman", "Paschim Medinipur", "Purba Bardhaman", "Purba Medinipur", "Purulia", "South 24 Parganas", "Uttar Dinajpur"]
+        };
+
+        const stateSelect = document.getElementById('shipping_state');
+        const districtSelect = document.getElementById('shipping_district');
+        const paymentPanel = document.getElementById('paymentPanel');
+        const continueBtn = document.getElementById('continueToPaymentBtn');
+        const placeOrderBtn = document.getElementById('placeOrderBtn');
+        const paymentStep = document.getElementById('fk-step-payment');
+        const checkoutForm = document.getElementById('checkoutForm');
+        const paymentMethodInputs = document.querySelectorAll('input[name="payment_method"]');
+        const paymentDynamicBlocks = document.querySelectorAll('.payment-dynamic-block');
+        if (!stateSelect || !districtSelect) return;
+
+        const selectedDistrict = districtSelect.getAttribute('data-selected-district') || '';
+
+        function populateDistricts(stateValue, defaultDistrict) {
+            const districts = districtMap[stateValue] || [];
+            districtSelect.innerHTML = '<option value="">Select district</option>';
+
+            if (!districts.length) {
+                const fallback = document.createElement('option');
+                fallback.value = 'Other';
+                fallback.textContent = 'Other';
+                districtSelect.appendChild(fallback);
+                districtSelect.value = defaultDistrict || '';
+                return;
+            }
+
+            districts.forEach(function (district) {
+                const option = document.createElement('option');
+                option.value = district;
+                option.textContent = district;
+                districtSelect.appendChild(option);
+            });
+
+            if (defaultDistrict && districts.includes(defaultDistrict)) {
+                districtSelect.value = defaultDistrict;
+            }
+        }
+
+        populateDistricts(stateSelect.value, selectedDistrict);
+        stateSelect.addEventListener('change', function () {
+            populateDistricts(this.value, '');
+        });
+
+        function revealPaymentSection() {
+            if (paymentPanel) paymentPanel.classList.remove('is-hidden');
+            if (placeOrderBtn) placeOrderBtn.disabled = false;
+            if (paymentStep) paymentStep.classList.add('is-active');
+            if (continueBtn) {
+                continueBtn.disabled = true;
+                continueBtn.textContent = 'Payment Step Opened';
+            }
+        }
+
+        if (continueBtn) {
+            continueBtn.addEventListener('click', function () {
+                const requiredSelectors = [
+                    'input[name="shipping_name"]',
+                    'input[name="shipping_phone"]',
+                    'textarea[name="shipping_address"]',
+                    'select[name="shipping_state"]',
+                    'select[name="shipping_district"]',
+                    'input[name="shipping_pincode"]'
+                ];
+
+                for (let i = 0; i < requiredSelectors.length; i++) {
+                    const field = document.querySelector(requiredSelectors[i]);
+                    if (!field) continue;
+                    if (!field.checkValidity()) {
+                        field.reportValidity();
+                        field.focus();
+                        return;
+                    }
+                }
+
+                revealPaymentSection();
+                if (paymentPanel) {
+                    paymentPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        }
+
+        function getSelectedPaymentMethod() {
+            const checked = document.querySelector('input[name="payment_method"]:checked');
+            return checked ? checked.value : 'cod';
+        }
+
+        function updatePaymentBlocks() {
+            const selectedMethod = getSelectedPaymentMethod();
+            paymentDynamicBlocks.forEach(function (block) {
+                const isActive = block.getAttribute('data-method') === selectedMethod;
+                block.style.display = isActive ? 'grid' : 'none';
+
+                const fields = block.querySelectorAll('input, select, textarea');
+                fields.forEach(function (field) {
+                    const mustRequire = field.getAttribute('data-required-if-active') === 'true';
+                    field.required = isActive && mustRequire;
+                });
+            });
+        }
+
+        if (paymentMethodInputs.length) {
+            paymentMethodInputs.forEach(function (input) {
+                input.addEventListener('change', updatePaymentBlocks);
+            });
+            updatePaymentBlocks();
+        }
+
+        if (checkoutForm) {
+            checkoutForm.addEventListener('submit', function (event) {
+                const selectedMethod = getSelectedPaymentMethod();
+                const activeBlock = document.querySelector('.payment-dynamic-block[data-method="' + selectedMethod + '"]');
+                if (!activeBlock) return;
+
+                const requiredFields = activeBlock.querySelectorAll('[data-required-if-active="true"]');
+                for (let i = 0; i < requiredFields.length; i++) {
+                    if (!requiredFields[i].checkValidity()) {
+                        event.preventDefault();
+                        requiredFields[i].reportValidity();
+                        requiredFields[i].focus();
+                        return;
+                    }
+                }
+            });
+        }
+    })();
+</script>
+
+{% endblock %}

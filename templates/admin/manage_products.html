@@ -1,0 +1,247 @@
+{% extends "admin_base.html" %}
+{% block content %}
+
+<section class="dashboard-section">
+    <div class="container">
+
+        {% if success %}
+            <div class="alert alert-success"><i class="fas fa-check-circle"></i> {{ success }}</div>
+        {% endif %}
+        {% if error %}
+            <div class="alert alert-error"><i class="fas fa-exclamation-circle"></i> {{ error }}</div>
+        {% endif %}
+
+        {% if action == 'list' %}
+            <!-- Product List -->
+            <div class="admin-toolbar" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px; flex-wrap:wrap; gap:15px;">
+                <h2 style="font-family:var(--font-body); font-size:1.4rem;">
+                    <i class="fas fa-box-open" style="color:var(--primary);"></i> Manage Products
+                </h2>
+                <div class="admin-toolbar-actions" style="display:flex; gap:10px; flex-wrap:wrap;">
+                    <a href="{{ url_for('admin_manage_products', action='add') }}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Add New Product
+                    </a>
+                    <a href="{{ url_for('export_products_excel') }}" class="btn btn-secondary">
+                        <i class="fas fa-download"></i> Export Excel
+                    </a>
+                </div>
+            </div>
+
+            <!-- Import Excel -->
+            <div style="margin-bottom:20px; padding:15px; background:var(--primary-bg); border-radius:var(--radius-sm);">
+                <form action="{{ url_for('import_products_excel') }}" method="POST" enctype="multipart/form-data" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                    <label style="font-size:0.85rem; font-weight:600;"><i class="fas fa-upload"></i> Import from Excel:</label>
+                    <input type="file" name="excel_file" accept=".xlsx,.xls" style="padding:5px;" required>
+                    <button type="submit" class="btn btn-secondary btn-sm">Import</button>
+                </form>
+            </div>
+
+            <div class="dashboard-content admin-table-wrap" style="overflow-x:auto;">
+                {% if products %}
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Image</th>
+                                <th>Name</th>
+                                <th>Category</th>
+                                <th>Price</th>
+                                <th>Status</th>
+                                <th>Featured</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for p in products %}
+                                <tr>
+                                    <td>#{{ p.id }}</td>
+                                    <td>
+                                        {% if p.image and p.image != 'default.jpg' %}
+                                            <img src="{{ url_for('static', filename='uploads/products/' + p.image) }}" class="product-thumb" alt="">
+                                        {% else %}
+                                            <div style="width:50px;height:50px;background:var(--primary-bg);border-radius:8px;display:flex;align-items:center;justify-content:center;">
+                                                <i class="fas fa-leaf" style="color:var(--primary);"></i>
+                                            </div>
+                                        {% endif %}
+                                    </td>
+                                    <td><strong>{{ p.name }}</strong></td>
+                                    <td>{{ p.category }}</td>
+                                    <td>
+                                        ₹{{ p.price|number_format }}
+                                        {% if p.original_price %}
+                                            <br><small style="color:var(--gray-light); text-decoration:line-through;">₹{{ p.original_price|number_format }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td><span class="status-{{ p.status }}">{{ p.status|capitalize }}</span></td>
+                                    <td>{{ '<i class="fas fa-star" style="color:var(--accent);"></i>'|safe if p.featured else '-' }}</td>
+                                    <td>
+                                        <div class="action-btns">
+                                            <a href="{{ url_for('admin_manage_products', action='edit', id=p.id) }}" class="btn-action btn-edit" title="Edit">
+                                                <i class="fas fa-pen"></i>
+                                            </a>
+                                            <a href="{{ url_for('admin_manage_products', toggle=p.id) }}" class="btn-action btn-toggle" title="Toggle Status">
+                                                <i class="fas fa-power-off"></i>
+                                            </a>
+                                            <a href="{{ url_for('admin_manage_products', delete=p.id) }}" class="btn-action btn-delete" title="Delete" onclick="return confirm('Are you sure you want to delete this product?');">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <p class="text-center" style="padding:40px; color:var(--gray-light);">No products found. <a href="{{ url_for('admin_manage_products', action='add') }}" style="color:var(--primary);">Add your first product</a></p>
+                {% endif %}
+            </div>
+
+        {% elif action in ('add', 'edit') %}
+            <!-- Add / Edit Form -->
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px;">
+                <h2 style="font-family:var(--font-body); font-size:1.4rem;">
+                    <i class="fas fa-{{ 'plus' if action == 'add' else 'pen' }}" style="color:var(--primary);"></i>
+                    {{ 'Add New Product' if action == 'add' else 'Edit Product' }}
+                </h2>
+                <a href="{{ url_for('admin_manage_products') }}" class="btn btn-secondary btn-sm">
+                    <i class="fas fa-arrow-left"></i> Back to List
+                </a>
+            </div>
+
+            <div class="admin-form-container">
+                <form method="POST" enctype="multipart/form-data" data-validate>
+                    {% if edit_product %}
+                        <input type="hidden" name="edit_id" value="{{ edit_product.id }}">
+                    {% endif %}
+
+                    <div class="form-group">
+                        <label>Product Name *</label>
+                        <input type="text" name="name" placeholder="Enter product name" required value="{{ edit_product.name if edit_product else '' }}">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Category</label>
+                            <select name="category">
+                                {% set cats = ['Skin Care', 'Hair Care', 'Bath & Body', 'Face Care', 'Wellness', 'Essential Oils', 'General'] %}
+                                {% for c in cats %}
+                                    <option value="{{ c }}" {{ 'selected' if edit_product and edit_product.category == c }}>{{ c }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Status</label>
+                            <select name="status">
+                                <option value="active" {{ 'selected' if edit_product and edit_product.status == 'active' }}>Active</option>
+                                <option value="inactive" {{ 'selected' if edit_product and edit_product.status == 'inactive' }}>Inactive</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Key Benefits (comma separated)</label>
+                        <input type="text" name="benefits" placeholder="e.g., Brightens skin, Reduces dark spots, Moisturizes" value="{{ edit_product.benefits if edit_product else '' }}">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Description</label>
+                        <textarea name="description" placeholder="Enter detailed product description">{{ edit_product.description if edit_product else '' }}</textarea>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Selling Price (₹) *</label>
+                            <input type="number" name="price" step="0.01" min="0" placeholder="e.g., 499" required value="{{ edit_product.price if edit_product else '' }}">
+                        </div>
+                        <div class="form-group">
+                            <label>Original Price (₹)</label>
+                            <input type="number" name="original_price" step="0.01" min="0" placeholder="e.g., 699 (for showing discount)" value="{{ edit_product.original_price if edit_product else '' }}">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Rating (0-5)</label>
+                            <input type="number" name="rating" step="0.1" min="0" max="5" placeholder="e.g., 4.5" value="{{ edit_product.rating if edit_product else '0' }}">
+                        </div>
+                        <div class="form-group">
+                            <label>Reviews Count</label>
+                            <input type="number" name="reviews_count" min="0" placeholder="e.g., 150" value="{{ edit_product.reviews_count if edit_product else '0' }}">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Main Product Image (Thumbnail)</label>
+                        <input type="file" name="image" accept="image/*" style="padding:10px;">
+                        {% if edit_product and edit_product.image != 'default.jpg' %}
+                            <div class="current-image">
+                                <p style="font-size:0.8rem; color:var(--gray); margin:5px 0;">Current main image:</p>
+                                <img src="{{ url_for('static', filename='uploads/products/' + edit_product.image) }}" alt="Current" style="max-width:150px; border-radius:8px;">
+                            </div>
+                        {% endif %}
+                        <div class="image-preview"></div>
+                    </div>
+
+                    <!-- Multiple Media Upload (Images + Videos) -->
+                    <div class="form-group">
+                        <label><i class="fas fa-photo-video" style="color:var(--primary);"></i> Additional Images & Videos</label>
+                        <p style="font-size:0.8rem; color:var(--gray); margin-bottom:8px;">
+                            Upload multiple images (JPG, PNG, GIF, WEBP) and videos (MP4, WEBM, MOV, AVI). Max 100MB total.
+                        </p>
+                        <div class="media-upload-area" id="mediaUploadArea" onclick="document.getElementById('mediaFilesInput').click();">
+                            <div class="upload-placeholder" id="mediaPlaceholder">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                <span>Click to select images & videos</span>
+                                <small>Or drag and drop files here</small>
+                            </div>
+                        </div>
+                        <input type="file" name="media_files" id="mediaFilesInput" multiple
+                               accept="image/*,video/mp4,video/webm,video/quicktime,video/x-msvideo"
+                               style="display:none;">
+                        <div class="media-preview-grid" id="mediaPreviewGrid"></div>
+                    </div>
+
+                    <!-- Existing Media (Edit mode) -->
+                    {% if edit_product and edit_media %}
+                    <div class="form-group">
+                        <label><i class="fas fa-images" style="color:var(--primary);"></i> Existing Media ({{ edit_media|length }} files)</label>
+                        <div class="existing-media-grid">
+                            {% for media in edit_media %}
+                            <div class="existing-media-item" id="media-item-{{ media.id }}">
+                                {% if media.media_type == 'video' %}
+                                    <video src="{{ url_for('static', filename='uploads/products/' + media.filename) }}" muted preload="metadata" style="width:100%; height:120px; object-fit:cover; border-radius:8px;"></video>
+                                    <span class="media-type-badge video"><i class="fas fa-video"></i></span>
+                                {% else %}
+                                    <img src="{{ url_for('static', filename='uploads/products/' + media.filename) }}" alt="" style="width:100%; height:120px; object-fit:cover; border-radius:8px;">
+                                    <span class="media-type-badge image"><i class="fas fa-image"></i></span>
+                                {% endif %}
+                                <button type="button" class="media-remove-btn" onclick="removeExistingMedia({{ media.id }}, this)" title="Remove">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div class="form-group">
+                        <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+                            <input type="checkbox" name="featured" value="1" style="width:auto;" {{ 'checked' if edit_product and edit_product.featured }}>
+                            <span>Mark as Featured Product</span>
+                        </label>
+                    </div>
+
+                    <div class="form-actions" style="display:flex; gap:10px;">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> {{ 'Add Product' if action == 'add' else 'Update Product' }}
+                        </button>
+                        <a href="{{ url_for('admin_manage_products') }}" class="btn btn-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        {% endif %}
+
+    </div>
+</section>
+
+{% endblock %}

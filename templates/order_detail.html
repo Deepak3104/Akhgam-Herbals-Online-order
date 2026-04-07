@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- Page Header -->
+<div class="page-header">
+    <div class="container">
+        <h2>Order {{ order.order_number }}</h2>
+        <p>Placed on {{ order.created_at.strftime('%d %b %Y, %I:%M %p') }}</p>
+        <div class="breadcrumb">
+            <a href="{{ url_for('index') }}">Home</a>
+            <i class="fas fa-chevron-right" style="font-size:0.7rem;"></i>
+            <a href="{{ url_for('my_orders') }}">My Orders</a>
+            <i class="fas fa-chevron-right" style="font-size:0.7rem;"></i>
+            <span>{{ order.order_number }}</span>
+        </div>
+    </div>
+</div>
+
+<section class="section">
+    <div class="container" style="max-width:800px;">
+        <!-- Order Status Timeline -->
+        <div class="order-timeline">
+            {% set statuses = ['pending', 'confirmed', 'processing', 'shipped', 'delivered'] %}
+            {% set status_icons = {'pending': 'clock', 'confirmed': 'check', 'processing': 'cog', 'shipped': 'truck', 'delivered': 'check-double'} %}
+            {% set current_idx = statuses.index(order.status) if order.status in statuses else -1 %}
+            {% if order.status == 'cancelled' %}
+                <div class="timeline-cancelled">
+                    <i class="fas fa-times-circle"></i>
+                    <h3>Order Cancelled</h3>
+                </div>
+            {% else %}
+                {% for status in statuses %}
+                <div class="timeline-step {{ 'active' if loop.index0 <= current_idx else '' }} {{ 'current' if loop.index0 == current_idx else '' }}">
+                    <div class="timeline-icon">
+                        <i class="fas fa-{{ status_icons[status] }}"></i>
+                    </div>
+                    <span>{{ status|capitalize }}</span>
+                </div>
+                {% if not loop.last %}
+                <div class="timeline-line {{ 'active' if loop.index0 < current_idx else '' }}"></div>
+                {% endif %}
+                {% endfor %}
+            {% endif %}
+        </div>
+
+        <div class="order-detail-grid">
+            <!-- Order Items -->
+            <div class="order-detail-items">
+                <h3><i class="fas fa-box" style="color:var(--primary); margin-right:8px;"></i> Order Items</h3>
+                {% for item in items %}
+                <div class="checkout-item" style="padding:15px 0; border-bottom:1px solid #f0f0f0;">
+                    <div class="checkout-item-img">
+                        {% if item.image and item.image != 'default.jpg' %}
+                            <img src="{{ url_for('static', filename='uploads/products/' + item.image) }}" alt="{{ item.product_name }}">
+                        {% else %}
+                            <div class="no-image" style="width:100%; height:100%;">
+                                <i class="fas fa-leaf" style="font-size:1rem;"></i>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="checkout-item-info" style="flex:1;">
+                        <span class="checkout-item-name">{{ item.product_name }}</span>
+                        <span class="checkout-item-qty">Qty: {{ item.quantity }} x ₹{{ item.product_price|number_format }}</span>
+                    </div>
+                    <div class="checkout-item-price">₹{{ item.subtotal|number_format }}</div>
+                </div>
+                {% endfor %}
+
+                <div class="summary-divider" style="margin:15px 0;"></div>
+                <div class="summary-row summary-total">
+                    <span>Total</span>
+                    <span>₹{{ order.total_amount|number_format }}</span>
+                </div>
+            </div>
+
+            <!-- Shipping Details -->
+            <div class="order-detail-shipping">
+                <h3><i class="fas fa-truck" style="color:var(--primary); margin-right:8px;"></i> Shipping Details</h3>
+                <div class="shipping-info-card">
+                    <p><strong>{{ order.shipping_name }}</strong></p>
+                    <p>{{ order.shipping_address }}</p>
+                    <p>District: {{ order.shipping_district }}</p>
+                    <p>State: {{ order.shipping_state }}</p>
+                    <p>Pincode: {{ order.shipping_pincode }}</p>
+                    <p><i class="fas fa-phone"></i> {{ order.shipping_phone }}</p>
+                    {% if order.shipping_email %}
+                    <p><i class="fas fa-envelope"></i> {{ order.shipping_email }}</p>
+                    {% endif %}
+                </div>
+
+                <h4 style="margin-top:20px; font-family:var(--font-body); font-size:0.95rem;">Payment</h4>
+                <p style="font-size:0.9rem; color:#666;">{{ order.payment_method|upper }}</p>
+
+                {% if order.notes %}
+                <h4 style="margin-top:15px; font-family:var(--font-body); font-size:0.95rem;">Notes</h4>
+                <p style="font-size:0.9rem; color:#666;">{{ order.notes }}</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div style="text-align:center; margin-top:30px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+            <a href="{{ url_for('my_orders') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to My Orders
+            </a>
+            {% if order.status == 'pending' %}
+            <form method="POST" action="{{ url_for('cancel_order', order_number=order.order_number) }}"
+                  onsubmit="return confirm('Cancel this order? This action cannot be undone.');">
+                <button type="submit" class="btn btn-danger">
+                    <i class="fas fa-times-circle"></i> Cancel Order
+                </button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+{% endblock %}

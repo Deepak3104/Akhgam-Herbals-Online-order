@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - {{ site_name }}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+<div class="auth-wrapper">
+    <div class="auth-card">
+        <!-- Banner Side -->
+        <div class="auth-banner">
+            <a href="{{ url_for('index') }}" class="logo" style="margin-bottom:30px;">
+                <img src="{{ url_for('static', filename='images/logo-dark.png') }}" alt="Akhgam - Beauty Inside" class="auth-logo-img">
+            </a>
+            <h2>Welcome!</h2>
+            <p>Register to avail the best deals on Ayurvedic products. Join our community of natural beauty enthusiasts.</p>
+            <div class="auth-perks">
+                <div class="perk">
+                    <i class="fas fa-star"></i>
+                    <span>Zero Subscription Fees</span>
+                </div>
+                <div class="perk">
+                    <i class="fas fa-tag"></i>
+                    <span>Exclusive member discounts</span>
+                </div>
+                <div class="perk">
+                    <i class="fas fa-shield-alt"></i>
+                    <span>100% secure & spam free</span>
+                </div>
+                <div class="perk">
+                    <i class="fas fa-truck"></i>
+                    <span>Priority order processing</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Side -->
+        <div class="auth-form">
+            <h2>Create Account</h2>
+            <p class="form-subtitle">Fill in your details to get started</p>
+
+            {% if error %}
+                <div class="alert alert-error"><i class="fas fa-exclamation-circle"></i> {{ error }}</div>
+            {% endif %}
+
+            <form method="POST" data-validate>
+                <div class="form-group">
+                    <label>Full Name</label>
+                    <div class="input-icon">
+                        <i class="fas fa-user"></i>
+                        <input type="text" name="name" placeholder="Enter your full name" required value="{{ form_data.get('name', '') }}">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Email Address</label>
+                    <div class="input-icon">
+                        <i class="fas fa-envelope"></i>
+                        <input type="email" name="email" placeholder="Enter your email" required value="{{ form_data.get('email', '') }}">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Phone Number</label>
+                    <div class="input-icon">
+                        <i class="fas fa-phone"></i>
+                        <input type="tel" name="phone" placeholder="Enter your phone number" required value="{{ form_data.get('phone', '') }}">
+                    </div>
+                </div>
+
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
+                    <div class="form-group">
+                        <label>Age</label>
+                        <div class="input-icon">
+                            <i class="fas fa-calendar-alt"></i>
+                            <input type="number" name="age" placeholder="Your age" min="1" max="120" value="{{ form_data.get('age', '') }}">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Gender</label>
+                        <div class="input-icon">
+                            <i class="fas fa-venus-mars"></i>
+                            <select name="gender" style="width:100%; padding:12px 12px 12px 40px; border:1px solid #e0e0e0; border-radius:var(--radius-sm); font-family:var(--font-body); font-size:0.9rem; color:#333; background:#fff; appearance:auto;">
+                                <option value="">Select Gender</option>
+                                <option value="male" {{ 'selected' if form_data.get('gender') == 'male' }}>Male</option>
+                                <option value="female" {{ 'selected' if form_data.get('gender') == 'female' }}>Female</option>
+                                <option value="other" {{ 'selected' if form_data.get('gender') == 'other' }}>Other</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Address</label>
+                    <div class="input-icon">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <input type="text" name="address" placeholder="Enter your full address" value="{{ form_data.get('address', '') }}">
+                    </div>
+                </div>
+
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
+                    <div class="form-group">
+                        <label>State *</label>
+                        <div class="input-icon">
+                            <i class="fas fa-map"></i>
+                            <input type="text" name="state" placeholder="Enter your state" required value="{{ form_data.get('state', '') }}">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>District *</label>
+                        <div class="input-icon">
+                            <i class="fas fa-location-dot"></i>
+                            <input type="text" name="district" placeholder="Enter your district" required value="{{ form_data.get('district', '') }}">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Pincode</label>
+                    <div class="input-icon">
+                        <i class="fas fa-map-pin"></i>
+                        <input type="text" name="pincode" placeholder="Enter your pincode" maxlength="10" value="{{ form_data.get('pincode', '') }}">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Password</label>
+                    <div class="input-icon">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" name="password" placeholder="Create a password (min 6 chars)" required minlength="6">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Confirm Password</label>
+                    <div class="input-icon">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" name="confirm_password" placeholder="Confirm your password" required minlength="6">
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="fas fa-user-plus"></i> Create Account
+                    </button>
+                </div>
+            </form>
+
+            <p class="form-link">Already have an account? <a href="{{ url_for('login') }}">Login here</a></p>
+            <p class="form-link"><a href="{{ url_for('index') }}"><i class="fas fa-arrow-left"></i> Back to Home</a></p>
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

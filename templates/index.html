@@ -1,0 +1,378 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- Hero Slider -->
+<section class="hero">
+    <div class="hero-slider">
+        <!-- Slide 1 -->
+        <div class="hero-slide active">
+            <div class="hero-slide-bg" style="background-image: url('/static/images/hero-slide-1.jpg');"></div>
+            <div class="container">
+                <div class="hero-content">
+                    <span class="hero-label">INTRODUCING</span>
+                    <h2>Luxe Herbal<br>Collection</h2>
+                    <p>Discover our premium range of Ayurvedic beauty products crafted with rare herbs and ancient formulations for radiant, healthy skin.</p>
+                    <div class="hero-buttons">
+                        <a href="{{ url_for('products') }}" class="btn btn-primary btn-lg">Shop Now <i class="fas fa-arrow-right"></i></a>
+                        <a href="{{ url_for('about') }}" class="btn btn-outline-white btn-lg">Our Story</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 2 -->
+        <div class="hero-slide">
+            <div class="hero-slide-bg" style="background-image: url('/static/images/hero-slide-2.jpg');"></div>
+            <div class="container">
+                <div class="hero-content">
+                    <span class="hero-label">AYURVEDIC HAIRCARE</span>
+                    <h2>8x Reduced Hairfall<br>From The 1st Wash</h2>
+                    <p>Experience the power of Bhringraj, Amla, and 14 Ayurvedic herbs working together to strengthen your hair from root to tip.</p>
+                    <div class="hero-buttons">
+                        <a href="{{ url_for('products', category='Hair Care') }}" class="btn btn-accent btn-lg">Explore Hair Care <i class="fas fa-arrow-right"></i></a>
+                        <a href="{{ url_for('products') }}" class="btn btn-outline-white btn-lg">View All</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 3 -->
+        <div class="hero-slide">
+            <div class="hero-slide-bg" style="background-image: url('/static/images/hero-slide-3.jpg');"></div>
+            <div class="container">
+                <div class="hero-content">
+                    <span class="hero-label">SKIN CARE RANGE</span>
+                    <h2>When Ayurveda Meets<br>Modern Science</h2>
+                    <p>Blending Ayurvedic wisdom with modern insights for holistic beauty solutions that work for all skin types.</p>
+                    <div class="hero-buttons">
+                        <a href="{{ url_for('products', category='Skin Care') }}" class="btn btn-pink btn-lg">Shop Skin Care <i class="fas fa-arrow-right"></i></a>
+                        <a href="{{ url_for('about') }}" class="btn btn-outline-white btn-lg">Learn More</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dots -->
+    <div class="hero-dots">
+        <div class="hero-dot active" data-slide="0"></div>
+        <div class="hero-dot" data-slide="1"></div>
+        <div class="hero-dot" data-slide="2"></div>
+    </div>
+</section>
+
+<!-- Modern Ayurveda Section -->
+<section class="section section-white">
+    <div class="container">
+        <div class="section-header">
+            <h2><em>Modern Ayurveda, Beautiful You</em></h2>
+            <p>Authentic Ayurvedic formulations enhanced with modern science for visible, lasting results</p>
+            <div class="divider"></div>
+        </div>
+    </div>
+</section>
+
+<!-- Video Hero -->
+<section class="video-hero">
+    <div class="video-hero-bg" style="background-image: url('/static/images/hero-banner-holistic.jpg'); background-size: cover; background-position: center;"></div>
+    <div class="video-hero-overlay"></div>
+    <div class="video-hero-content">
+        <h2>Promoting Holistic Beauty</h2>
+        <p>Nature's finest ingredients, crafted for your skin</p>
+    </div>
+</section>
+
+<!-- Fresh Launches / Featured Products -->
+<section class="section section-white carousel-section">
+    <div class="container">
+        <div class="section-header">
+            <h2><em>Fresh Launches</em></h2>
+            <p>Discover our newest Ayurvedic formulations</p>
+        </div>
+
+        <div class="carousel-container">
+            <div class="carousel-track">
+                {% if featured %}
+                    {% for product in featured %}
+                        {% set savings = (product.original_price - product.price)|round|int if product.original_price else 0 %}
+                        <div class="product-card">
+                            <div class="product-badge">
+                                {% if savings > 0 %}
+                                    <span class="badge-save">Save ₹{{ savings }}</span>
+                                {% endif %}
+                                <span class="badge-featured">FEATURED</span>
+                            </div>
+                            <div class="product-img">
+                                <a href="{{ url_for('product_details', product_id=product.id) }}">
+                                    {% if product.image and product.image != 'default.jpg' %}
+                                        <img src="{{ url_for('static', filename='uploads/products/' + product.image) }}" alt="{{ product.name }}">
+                                    {% else %}
+                                        <div class="no-image">
+                                            <i class="fas fa-leaf"></i>
+                                            <span>{{ product.name }}</span>
+                                        </div>
+                                    {% endif %}
+                                </a>
+                                {% if is_logged_in %}
+                                    <button class="wishlist-btn" data-product-id="{{ product.id }}" data-wishlisted="{{ 'true' if product.id in wishlist_ids else 'false' }}">
+                                        <i class="{% if product.id in wishlist_ids %}fas{% else %}far{% endif %} fa-heart"></i>
+                                    </button>
+                                {% else %}
+                                    <a href="{{ url_for('login') }}" class="wishlist-btn" title="Login to add to wishlist">
+                                        <i class="far fa-heart"></i>
+                                    </a>
+                                {% endif %}
+                            </div>
+                            <div class="product-info">
+                                <span class="product-category">{{ product.category }}</span>
+                                <h3 class="product-name">
+                                    <a href="{{ url_for('product_details', product_id=product.id) }}">{{ product.name }}</a>
+                                </h3>
+                                {% if product.rating > 0 %}
+                                    <div class="product-rating">
+                                        <span class="stars">{{ generate_stars(product.rating)|safe }}</span>
+                                        <span>{{ product.rating }} ({{ product.reviews_count }})</span>
+                                    </div>
+                                {% endif %}
+                                <div class="product-bottom">
+                                    <div class="product-price">
+                                        <span class="price-current">₹{{ product.price|number_format }}</span>
+                                        {% if product.original_price %}
+                                            <span class="price-original">₹{{ product.original_price|number_format }}</span>
+                                        {% endif %}
+                                    </div>
+                                    <button class="btn-add add-to-cart-btn" data-product-id="{{ product.id }}"><i class="fas fa-cart-plus"></i> Add</button>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-center">No featured products available yet.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="carousel-nav">
+            <button class="carousel-btn carousel-prev"><i class="fas fa-chevron-left"></i></button>
+            <button class="carousel-btn carousel-next"><i class="fas fa-chevron-right"></i></button>
+        </div>
+
+        <div class="text-center mt-3">
+            <a href="{{ url_for('products') }}" class="view-all-link">View all <i class="fas fa-arrow-right"></i></a>
+        </div>
+    </div>
+</section>
+
+<!-- Ayurvedic Haircare Section -->
+<section class="video-hero" style="height: 400px;">
+    <div class="video-hero-bg" style="background-image: url('/static/images/hero-banner-quality.jpg'); background-size: cover; background-position: center;"></div>
+    <div class="video-hero-overlay"></div>
+    <div class="video-hero-content">
+        <p style="text-transform: uppercase; letter-spacing: 3px; font-size: 0.9rem; margin-bottom: 10px;">AYURVEDIC HAIRCARE</p>
+        <h2>Ensuring Product Quality</h2>
+        <p>Every herb, every ingredient — tested and trusted</p>
+    </div>
+</section>
+
+<!-- Our Bestsellers -->
+{% if bestsellers %}
+<section class="section section-light carousel-section">
+    <div class="container">
+        <div class="section-header">
+            <h2><em>Our Bestsellers</em></h2>
+            <p>Most loved by our customers</p>
+        </div>
+
+        <div class="carousel-container">
+            <div class="carousel-track">
+                    {% for product in bestsellers %}
+                        {% set savings = (product.original_price - product.price)|round|int if product.original_price else 0 %}
+                        <div class="product-card">
+                            <div class="product-badge">
+                                {% if savings > 0 %}
+                                    <span class="badge-save">Save ₹{{ savings }}</span>
+                                {% endif %}
+                                {% if product.reviews_count > 300 %}
+                                    <span class="badge-bestseller">BEST SELLER</span>
+                                {% endif %}
+                            </div>
+                            <div class="product-img">
+                                <a href="{{ url_for('product_details', product_id=product.id) }}">
+                                    {% if product.image and product.image != 'default.jpg' %}
+                                        <img src="{{ url_for('static', filename='uploads/products/' + product.image) }}" alt="{{ product.name }}">
+                                    {% else %}
+                                        <div class="no-image">
+                                            <i class="fas fa-leaf"></i>
+                                            <span>{{ product.name }}</span>
+                                        </div>
+                                    {% endif %}
+                                </a>
+                                {% if is_logged_in %}
+                                    <button class="wishlist-btn" data-product-id="{{ product.id }}" data-wishlisted="{{ 'true' if product.id in wishlist_ids else 'false' }}">
+                                        <i class="{% if product.id in wishlist_ids %}fas{% else %}far{% endif %} fa-heart"></i>
+                                    </button>
+                                {% else %}
+                                    <a href="{{ url_for('login') }}" class="wishlist-btn" title="Login to add to wishlist">
+                                        <i class="far fa-heart"></i>
+                                    </a>
+                                {% endif %}
+                            </div>
+                            <div class="product-info">
+                                <span class="product-category">{{ product.category }}</span>
+                                <h3 class="product-name">
+                                    <a href="{{ url_for('product_details', product_id=product.id) }}">{{ product.name }}</a>
+                                </h3>
+                                {% if product.rating > 0 %}
+                                    <div class="product-rating">
+                                        <span class="stars">{{ generate_stars(product.rating)|safe }}</span>
+                                        <span>{{ product.rating }} ({{ product.reviews_count }})</span>
+                                    </div>
+                                {% endif %}
+                                <div class="product-bottom">
+                                    <div class="product-price">
+                                        <span class="price-current">₹{{ product.price|number_format }}</span>
+                                        {% if product.original_price %}
+                                            <span class="price-original">₹{{ product.original_price|number_format }}</span>
+                                        {% endif %}
+                                    </div>
+                                    <button class="btn-add add-to-cart-btn" data-product-id="{{ product.id }}"><i class="fas fa-cart-plus"></i> Add</button>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+            </div>
+        </div>
+
+        <div class="carousel-nav">
+            <button class="carousel-btn carousel-prev"><i class="fas fa-chevron-left"></i></button>
+            <button class="carousel-btn carousel-next"><i class="fas fa-chevron-right"></i></button>
+        </div>
+
+        <div class="text-center mt-3">
+            <a href="{{ url_for('products') }}" class="view-all-link">View all <i class="fas fa-arrow-right"></i></a>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- When Ayurveda Meets Modern Science -->
+<section class="video-hero" style="height: 450px;">
+    <div class="video-hero-bg" style="background-image: url('/static/images/hero-banner-science.jpg'); background-size: cover; background-position: center;"></div>
+    <div class="video-hero-overlay" style="background: rgba(0,0,0,0.35);"></div>
+    <div class="video-hero-content">
+        <h2>When Ayurveda Meets Modern Science</h2>
+        <p>Blending Ayurvedic wisdom with modern insights for holistic beauty solutions that work for all</p>
+    </div>
+</section>
+
+<!-- Shop by Categories -->
+<section class="section section-white">
+    <div class="container">
+        <div class="section-header">
+            <h2>Shop by Categories</h2>
+        </div>
+
+        <div class="categories-grid modern-categories">
+            <a href="{{ url_for('products', category='Hair Care') }}" class="category-card" aria-label="Shop Hair Care">
+                <div class="cat-img cat-hair">
+                    <img src="{{ url_for('static', filename='images/categories/hair.jpg') }}" alt="Natural hair care products" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1605497788044-5a32c7078486?auto=format&fit=crop&w=900&q=80';">
+                </div>
+                <h4>Hair</h4>
+            </a>
+
+            <a href="{{ url_for('products', category='Skin Care') }}" class="category-card" aria-label="Shop Face Care">
+                <div class="cat-img cat-face">
+                    <img src="{{ url_for('static', filename='images/categories/face.jpg') }}" alt="Professional facial skin care" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1571781926291-c477ebfd024b?auto=format&fit=crop&w=900&q=80';">
+                </div>
+                <h4>Face</h4>
+            </a>
+
+            <a href="{{ url_for('products', category='Body Care') }}" class="category-card" aria-label="Shop Body Care">
+                <div class="cat-img cat-body">
+                    <img src="{{ url_for('static', filename='images/categories/body.jpg') }}" alt="Body care and moisturizing products" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1619451334792-150fd785ee74?auto=format&fit=crop&w=900&q=80';">
+                </div>
+                <h4>Body</h4>
+            </a>
+
+            <a href="{{ url_for('products', category='Baby Care') }}" class="category-card" aria-label="Shop Baby Care">
+                <div class="cat-img cat-baby">
+                    <img src="{{ url_for('static', filename='images/categories/baby.jpg') }}" alt="Gentle baby care essentials" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1519689680058-324335c77eba?auto=format&fit=crop&w=900&q=80';">
+                </div>
+                <h4>Baby</h4>
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- Naturally Powerful Ingredients -->
+<section class="section section-white">
+    <div class="container">
+        <div class="section-header">
+            <h2><em>Naturally Powerful Ingredients</em></h2>
+            <p>The finest herbs and natural extracts in every product</p>
+        </div>
+
+        <div class="ingredients-grid">
+            <div class="ingredient-card">
+                <div class="ing-img" style="background: linear-gradient(135deg, #a8e6cf, #88d8a8);">
+                    <div class="no-image" style="height:100%;">
+                        <i class="fas fa-seedling" style="font-size:2.5rem;"></i>
+                    </div>
+                </div>
+                <h4>Aloe Vera</h4>
+                <p>Helps combat inflammation & itchiness.</p>
+            </div>
+            <div class="ingredient-card">
+                <div class="ing-img" style="background: linear-gradient(135deg, #ffd89b, #f5a623);">
+                    <div class="no-image" style="height:100%;">
+                        <i class="fas fa-lemon" style="font-size:2.5rem;color:#f57c00;"></i>
+                    </div>
+                </div>
+                <h4>Himalayan Mandarin</h4>
+                <p>Reduces pigmentation & brightens skin.</p>
+            </div>
+            <div class="ingredient-card">
+                <div class="ing-img" style="background: linear-gradient(135deg, #e8b5ce, #c97fb3);">
+                    <div class="no-image" style="height:100%;">
+                        <i class="fas fa-spa" style="font-size:2.5rem;color:#ad1457;"></i>
+                    </div>
+                </div>
+                <h4>Kashmiri Saffron</h4>
+                <p>Reduces pigmentation & brightens skin.</p>
+            </div>
+            <div class="ingredient-card">
+                <div class="ing-img" style="background: linear-gradient(135deg, #f5c6a0, #e8985a);">
+                    <div class="no-image" style="height:100%;">
+                        <i class="fas fa-mortar-pestle" style="font-size:2.5rem;color:#bf360c;"></i>
+                    </div>
+                </div>
+                <h4>Ashwagandha</h4>
+                <p>Boosts collagen and reduces fine lines & wrinkles.</p>
+            </div>
+            <div class="ingredient-card">
+                <div class="ing-img" style="background: linear-gradient(135deg, #fff3cd, #ffc107);">
+                    <div class="no-image" style="height:100%;">
+                        <i class="fas fa-gem" style="font-size:2.5rem;color:#ff8f00;"></i>
+                    </div>
+                </div>
+                <h4>24K Gold</h4>
+                <p>Boosts collagen and reduces fine lines & wrinkles.</p>
+            </div>
+            <div class="ingredient-card">
+                <div class="ing-img" style="background: linear-gradient(135deg, #ffcc80, #ef6c00);">
+                    <div class="no-image" style="height:100%;">
+                        <i class="fas fa-sun" style="font-size:2.5rem;color:#e65100;"></i>
+                    </div>
+                </div>
+                <h4>Turmeric</h4>
+                <p>Helps combat inflammation & itchiness.</p>
+            </div>
+        </div>
+
+        <!--<div class="text-center mt-3">
+            <a href="{{ url_for('products') }}" class="view-all-link">View all Ingredient List <i class="fas fa-arrow-right"></i></a>
+        </div>-->
+    </div>
+</section>
+
+{% endblock %}
