@@ -1,0 +1,15 @@
+.env
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+*.log
+data/
+mysql_backups/
+project_backups/
+deploy_build/
+static/uploads/

@@ -1,0 +1,33 @@
+services:
+  - type: web
+    name: akhgam-herbals
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 2 --timeout 120
+    envVars:
+      - key: DB_TYPE
+        value: postgres
+      - key: MYSQL_HOST
+        value: aws-0-ap-south-1.pooler.supabase.com
+      - key: MYSQL_PORT
+        value: "6543"
+      - key: MYSQL_USER
+        value: postgres.opdnquvlmxaetjrjtafg
+      - key: MYSQL_PASSWORD
+        sync: false   # Set this manually in Render dashboard - do NOT hardcode
+      - key: MYSQL_DB
+        value: postgres
+      - key: SECRET_KEY
+        generateValue: true  # Render auto-generates a secure random value
+      - key: MAIL_SERVER
+        value: smtp.gmail.com
+      - key: MAIL_PORT
+        value: "587"
+      - key: MAIL_USERNAME
+        sync: false   # Set in Render dashboard
+      - key: MAIL_PASSWORD
+        sync: false   # Set in Render dashboard
+      - key: RAZORPAY_KEY_ID
+        sync: false   # Set in Render dashboard
+      - key: RAZORPAY_KEY_SECRET
+        sync: false   # Set in Render dashboard
