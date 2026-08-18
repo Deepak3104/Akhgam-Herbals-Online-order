@@ -6,5 +6,5 @@ openpyxl==3.1.5
 python-dotenv==1.0.1
 razorpay==1.4.2
 PyMySQL==1.2.0
-vercel-wsgi
+
 pg8000

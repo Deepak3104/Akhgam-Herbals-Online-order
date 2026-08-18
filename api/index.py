@@ -1,5 +1,3 @@
-from vercel_wsgi import make_wsgi_handler
+# Vercel entry point — @vercel/python runtime supports WSGI natively.
+# Simply importing and exposing `app` is enough; no extra package needed.
 from app import app
-
-# Create Vercel WSGI handler for the Flask app
-handler = make_wsgi_handler(app)
