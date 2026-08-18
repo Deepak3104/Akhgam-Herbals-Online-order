@@ -1,11 +1,8 @@
-import MySQLdb
-import MySQLdb.cursors
+from config import get_db
 
-db = MySQLdb.connect(
-    host='localhost', user='root', passwd='7486',
-    db='akhgam_herbals', charset='utf8mb4',
-    cursorclass=MySQLdb.cursors.DictCursor
-)
+db = get_db()
+
+
 cur = db.cursor()
 
 cur.execute("SELECT COUNT(*) as cnt FROM products")

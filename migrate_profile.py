@@ -1,22 +1,36 @@
 """Add profile_image column to users table."""
+try:
+    import pymysql
+    pymysql.install_as_MySQLdb()
+except ImportError:
+    pass
+
 import MySQLdb
 
-db = MySQLdb.connect(
-    host='localhost',
-    user='root',
-    passwd='7486',
-    db='akhgam_herbals',
-    charset='utf8mb4'
-)
+from config import Config, get_db
+
+db = get_db()
 cur = db.cursor()
 
 # Check if column already exists
-cur.execute("SHOW COLUMNS FROM users LIKE 'profile_image'")
-if cur.fetchone():
+if Config.DB_TYPE == 'postgres':
+    cur.execute(
+        "SELECT column_name FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'profile_image'"
+    )
+    exists = cur.fetchone() is not None
+else:
+    cur.execute("SHOW COLUMNS FROM users LIKE 'profile_image'")
+    exists = cur.fetchone() is not None
+
+if exists:
     print("profile_image column already exists.")
 else:
-    cur.execute("ALTER TABLE users ADD COLUMN profile_image VARCHAR(255) DEFAULT NULL AFTER password")
+    if Config.DB_TYPE == 'postgres':
+        cur.execute("ALTER TABLE users ADD COLUMN profile_image VARCHAR(255) DEFAULT NULL")
+    else:
+        cur.execute("ALTER TABLE users ADD COLUMN profile_image VARCHAR(255) DEFAULT NULL AFTER password")
     db.commit()
     print("profile_image column added successfully!")
 
 db.close()
+

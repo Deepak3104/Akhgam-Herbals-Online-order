@@ -6,6 +6,9 @@ import os
 import time
 import random
 import math
+import hmac
+import hashlib
+from datetime import datetime
 from urllib.parse import quote
 from functools import wraps
 
@@ -16,11 +19,23 @@ from flask import (
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 
+# Use PyMySQL as a drop-in replacement for MySQLdb on Windows
+try:
+    import pymysql
+    pymysql.install_as_MySQLdb()
+except ImportError:
+    pass
+
 import MySQLdb
 import MySQLdb.cursors
 
 from flask_mail import Mail, Message as MailMessage
 from config import Config
+
+try:
+    import razorpay
+except ImportError:
+    razorpay = None
 
 # ============================================
 # App Setup
@@ -28,6 +43,15 @@ from config import Config
 app = Flask(__name__)
 app.config.from_object(Config)
 app.url_map.strict_slashes = False
+
+
+@app.route('/favicon.ico')
+def favicon():
+    """Serve favicon with HTTP 200 even if no icon file exists yet."""
+    favicon_path = os.path.join(app.static_folder, 'favicon.ico')
+    if os.path.exists(favicon_path):
+        return send_file(favicon_path, mimetype='image/x-icon')
+    return ('', 200)
 
 
 @app.before_request
@@ -62,16 +86,10 @@ PROFILE_UPLOAD_FOLDER = os.path.join(os.path.dirname(app.config['UPLOAD_FOLDER']
 # ============================================
 # Database Connection
 # ============================================
-def get_db():
-    """Get a MySQL database connection."""
-    return MySQLdb.connect(
-        host=app.config['MYSQL_HOST'],
-        user=app.config['MYSQL_USER'],
-        passwd=app.config['MYSQL_PASSWORD'],
-        db=app.config['MYSQL_DB'],
-        charset='utf8mb4',
-        cursorclass=MySQLdb.cursors.DictCursor
-    )
+from config import get_db
+
+
+
 
 
 def ensure_address_columns():
@@ -79,6 +97,7 @@ def ensure_address_columns():
     columns = [
         ('users', 'state', "VARCHAR(100) DEFAULT NULL AFTER address"),
         ('users', 'district', "VARCHAR(100) DEFAULT NULL AFTER state"),
+        ('users', 'dob', "DATE DEFAULT NULL AFTER age"),
         ('orders', 'shipping_state', "VARCHAR(100) NOT NULL DEFAULT '' AFTER shipping_address"),
         ('orders', 'shipping_district', "VARCHAR(100) NOT NULL DEFAULT '' AFTER shipping_state"),
     ]
@@ -87,9 +106,19 @@ def ensure_address_columns():
         db = get_db()
         cur = db.cursor()
         for table_name, col_name, col_def in columns:
-            cur.execute(f"SHOW COLUMNS FROM {table_name} LIKE %s", (col_name,))
-            if not cur.fetchone():
-                cur.execute(f"ALTER TABLE {table_name} ADD COLUMN {col_name} {col_def}")
+            if app.config.get('DB_TYPE') == 'postgres':
+                cur.execute(
+                    "SELECT column_name FROM information_schema.columns WHERE table_name = %s AND column_name = %s",
+                    (table_name, col_name)
+                )
+                exists = cur.fetchone() is not None
+            else:
+                cur.execute(f"SHOW COLUMNS FROM {table_name} LIKE %s", (col_name,))
+                exists = cur.fetchone() is not None
+
+            if not exists:
+                clean_def = col_def.split(" AFTER ")[0].replace("DATETIME", "TIMESTAMP")
+                cur.execute(f"ALTER TABLE {table_name} ADD COLUMN {col_name} {clean_def}")
         db.commit()
     except Exception as e:
         app.logger.warning(f'Address columns check failed: {e}')
@@ -99,6 +128,77 @@ def ensure_address_columns():
 
 
 ensure_address_columns()
+
+
+def ensure_payment_method_column():
+    """Allow modern payment method values in orders.payment_method."""
+    if app.config.get('DB_TYPE') == 'postgres':
+        return  # Handled by database_postgres.sql
+
+    db = None
+    try:
+        db = get_db()
+        cur = db.cursor()
+        cur.execute("SHOW COLUMNS FROM orders LIKE 'payment_method'")
+        column = cur.fetchone()
+        if not column:
+            return
+
+        col_type = (column.get('Type') or '').lower()
+        required_values = ['cod', 'upi', 'bank_transfer', 'card', 'net_banking', 'razorpay']
+
+        if col_type.startswith('enum('):
+            if any(f"'{value}'" not in col_type for value in required_values):
+                cur.execute("ALTER TABLE orders MODIFY payment_method VARCHAR(50) NOT NULL DEFAULT 'cod'")
+                db.commit()
+    except Exception as e:
+        app.logger.warning(f'Payment method column check failed: {e}')
+    finally:
+        if db:
+            db.close()
+
+
+ensure_payment_method_column()
+
+
+def ensure_payment_tracking_columns():
+    """Ensure orders table has payment tracking fields for gateway reconciliation."""
+    columns = [
+        ('orders', 'payment_gateway_order_id', "VARCHAR(100) DEFAULT NULL AFTER payment_method"),
+        ('orders', 'payment_gateway_payment_id', "VARCHAR(100) DEFAULT NULL AFTER payment_gateway_order_id"),
+        ('orders', 'payment_gateway_signature', "VARCHAR(255) DEFAULT NULL AFTER payment_gateway_payment_id"),
+        ('orders', 'payment_status', "VARCHAR(20) NOT NULL DEFAULT 'pending' AFTER payment_gateway_signature"),
+        ('orders', 'paid_at', "DATETIME DEFAULT NULL AFTER payment_status"),
+    ]
+
+    db = None
+    try:
+        db = get_db()
+        cur = db.cursor()
+        for table_name, col_name, col_def in columns:
+            if app.config.get('DB_TYPE') == 'postgres':
+                cur.execute(
+                    "SELECT column_name FROM information_schema.columns WHERE table_name = %s AND column_name = %s",
+                    (table_name, col_name)
+                )
+                exists = cur.fetchone() is not None
+            else:
+                cur.execute(f"SHOW COLUMNS FROM {table_name} LIKE %s", (col_name,))
+                exists = cur.fetchone() is not None
+
+            if not exists:
+                clean_def = col_def.split(" AFTER ")[0].replace("DATETIME", "TIMESTAMP")
+                cur.execute(f"ALTER TABLE {table_name} ADD COLUMN {col_name} {clean_def}")
+        db.commit()
+    except Exception as e:
+        app.logger.warning(f'Payment tracking columns check failed: {e}')
+    finally:
+        if db:
+            db.close()
+
+
+
+ensure_payment_tracking_columns()
 
 
 # ============================================
@@ -124,6 +224,78 @@ def get_media_type(filename):
 def get_whatsapp_link(product_name, client_name='Customer'):
     msg = f"Hello Akhgam Herbals, I am {client_name}. I would like to order {product_name}. Please share more details."
     return f"https://wa.me/{app.config['WHATSAPP_NUMBER']}?text={quote(msg)}"
+
+
+def get_razorpay_client():
+    """Return a configured Razorpay client, or None when unavailable."""
+    key_id = (app.config.get('RAZORPAY_KEY_ID') or '').strip()
+    key_secret = (app.config.get('RAZORPAY_KEY_SECRET') or '').strip()
+    if not key_id or not key_secret or razorpay is None:
+        return None
+    try:
+        return razorpay.Client(auth=(key_id, key_secret))
+    except Exception as e:
+        app.logger.error(f'Razorpay client initialization failed: {e}')
+        return None
+
+
+def build_razorpay_checkout_data(total_amount, user=None):
+    """Create Razorpay order payload used by checkout.js on the client."""
+    client = get_razorpay_client()
+    if client is None:
+        return None
+
+    amount_paise = int(round(float(total_amount) * 100))
+    if amount_paise <= 0:
+        return None
+
+    currency = (app.config.get('RAZORPAY_CURRENCY') or 'INR').strip().upper() or 'INR'
+    receipt = f"akhgam_{int(time.time())}"
+
+    try:
+        razorpay_order = client.order.create({
+            'amount': amount_paise,
+            'currency': currency,
+            'receipt': receipt,
+            'payment_capture': 1,
+        })
+    except Exception as e:
+        app.logger.error(f'Razorpay order creation failed: {e}')
+        return None
+
+    prefill = {}
+    if user:
+        if user.get('name'):
+            prefill['name'] = user['name']
+        if user.get('email'):
+            prefill['email'] = user['email']
+        if user.get('phone'):
+            prefill['contact'] = user['phone']
+
+    return {
+        'key_id': (app.config.get('RAZORPAY_KEY_ID') or '').strip(),
+        'amount': amount_paise,
+        'currency': currency,
+        'order_id': razorpay_order.get('id'),
+        'name': app.config.get('SITE_NAME', 'Akhgam Herbals'),
+        'description': 'Secure order payment',
+        'prefill': prefill,
+        'theme': {'color': '#8b2d4f'},
+    }
+
+
+def verify_razorpay_webhook_signature(payload_bytes, received_signature):
+    """Verify Razorpay webhook payload signature using HMAC SHA256."""
+    secret = (app.config.get('RAZORPAY_WEBHOOK_SECRET') or '').strip()
+    if not secret or not received_signature:
+        return False
+
+    generated = hmac.new(
+        secret.encode('utf-8'),
+        payload_bytes,
+        hashlib.sha256,
+    ).hexdigest()
+    return hmac.compare_digest(generated, received_signature)
 
 
 def normalize_phone_variants(phone):
@@ -225,6 +397,87 @@ def generate_stars(rating):
     return stars
 
 
+def get_marketing_bestseller_ids(cursor, limit=8):
+    """Return product IDs using admin picks + 50/50 sales strategy."""
+    if limit <= 0:
+        return []
+
+    cursor.execute(
+        "SELECT id FROM products WHERE status='active' AND featured=1 ORDER BY created_at DESC LIMIT %s",
+        (limit,)
+    )
+    admin_pick_ids = [row['id'] for row in cursor.fetchall()]
+
+    selected_ids = list(admin_pick_ids)
+    remaining_slots = max(0, limit - len(selected_ids))
+    if remaining_slots == 0:
+        return selected_ids[:limit]
+
+    cursor.execute("""
+        SELECT
+            p.id,
+            p.reviews_count,
+            COALESCE(s.sales_qty, 0) AS sales_qty
+        FROM products p
+        LEFT JOIN (
+            SELECT oi.product_id, SUM(oi.quantity) AS sales_qty
+            FROM order_items oi
+            JOIN orders o ON oi.order_id = o.id
+            WHERE o.status IN ('confirmed', 'processing', 'shipped', 'delivered')
+            GROUP BY oi.product_id
+        ) s ON s.product_id = p.id
+        WHERE p.status='active'
+    """)
+    candidates = cursor.fetchall()
+
+    excluded = set(selected_ids)
+    top_selling = [
+        row for row in candidates
+        if row['id'] not in excluded and (row.get('sales_qty') or 0) > 0
+    ]
+    top_selling.sort(
+        key=lambda row: (
+            -(row.get('sales_qty') or 0),
+            -(row.get('reviews_count') or 0),
+            -(row['id'] or 0)
+        )
+    )
+
+    never_ordered = [
+        row for row in candidates
+        if row['id'] not in excluded and (row.get('sales_qty') or 0) == 0
+    ]
+    random.shuffle(never_ordered)
+
+    top_slots = math.ceil(remaining_slots / 2)
+    growth_slots = remaining_slots - top_slots
+
+    for row in top_selling[:top_slots]:
+        selected_ids.append(row['id'])
+        excluded.add(row['id'])
+
+    added_growth = 0
+    for row in never_ordered:
+        if added_growth >= growth_slots:
+            break
+        if row['id'] in excluded:
+            continue
+        selected_ids.append(row['id'])
+        excluded.add(row['id'])
+        added_growth += 1
+
+    if len(selected_ids) < limit:
+        fallback_rows = [row for row in candidates if row['id'] not in excluded]
+        fallback_rows.sort(key=lambda row: (-(row.get('reviews_count') or 0), -(row['id'] or 0)))
+        for row in fallback_rows:
+            if len(selected_ids) >= limit:
+                break
+            selected_ids.append(row['id'])
+            excluded.add(row['id'])
+
+    return selected_ids[:limit]
+
+
 # ============================================
 # Context Processors (global template vars)
 # ============================================
@@ -287,11 +540,23 @@ def index():
     db = get_db()
     cur = db.cursor()
 
-    cur.execute("SELECT * FROM products WHERE status='active' AND featured=1 ORDER BY created_at DESC LIMIT 8")
+    cur.execute("SELECT * FROM products WHERE status='active' ORDER BY created_at DESC")
     featured = cur.fetchall()
 
-    cur.execute("SELECT * FROM products WHERE status='active' ORDER BY reviews_count DESC LIMIT 8")
-    bestsellers = cur.fetchall()
+    bestseller_ids = get_marketing_bestseller_ids(cur, limit=8)
+    bestsellers = []
+    if bestseller_ids:
+        placeholders = ','.join(['%s'] * len(bestseller_ids))
+        cur.execute(f"SELECT * FROM products WHERE status='active' AND id IN ({placeholders})", tuple(bestseller_ids))
+        bestseller_rows = cur.fetchall()
+        product_map = {row['id']: row for row in bestseller_rows}
+        bestsellers = [product_map[pid] for pid in bestseller_ids if pid in product_map]
+
+    bestseller_id_set = set(bestseller_ids)
+    for product in featured:
+        product['is_bestseller'] = bool(product.get('featured')) or product['id'] in bestseller_id_set
+    for product in bestsellers:
+        product['is_bestseller'] = bool(product.get('featured')) or product['id'] in bestseller_id_set
 
     client_name = session.get('username', 'Customer')
     db.close()
@@ -335,6 +600,10 @@ def products():
 
     cur.execute(f"SELECT * FROM products {where} {order}", params)
     product_list = cur.fetchall()
+
+    bestseller_ids = set(get_marketing_bestseller_ids(cur, limit=24))
+    for product in product_list:
+        product['is_bestseller'] = bool(product.get('featured')) or product['id'] in bestseller_ids
 
     cur.execute("SELECT DISTINCT category FROM products WHERE status='active' ORDER BY category")
     categories = cur.fetchall()
@@ -405,6 +674,8 @@ def product_details(product_id):
     discount_pct = round((savings / float(product['original_price'])) * 100) if product['original_price'] and float(product['original_price']) > 0 else 0
 
     benefits = [b.strip() for b in (product['benefits'] or '').split(',') if b.strip()]
+    bestseller_ids = set(get_marketing_bestseller_ids(cur, limit=24))
+    is_bestseller = bool(product.get('featured')) or product_id in bestseller_ids
 
     db.close()
 
@@ -419,7 +690,64 @@ def product_details(product_id):
                            client_name=client_name,
                            savings=savings,
                            discount_pct=discount_pct,
-                           benefits=benefits)
+                           benefits=benefits,
+                           is_bestseller=is_bestseller)
+
+
+@app.route('/product/<int:product_id>/popup')
+def product_details_popup(product_id):
+    db = get_db()
+    cur = db.cursor()
+
+    cur.execute("SELECT * FROM products WHERE id=%s AND status='active'", (product_id,))
+    product = cur.fetchone()
+
+    if not product:
+        db.close()
+        return jsonify({'success': False, 'message': 'Product not found.'}), 404
+
+    cur.execute("""
+        SELECT COALESCE(SUM(oi.quantity), 0) AS sold_count
+        FROM order_items oi
+        JOIN orders o ON oi.order_id = o.id
+        WHERE oi.product_id=%s
+            AND o.status IN ('confirmed', 'processing', 'shipped', 'delivered')
+    """, (product_id,))
+    sold_count = cur.fetchone()['sold_count']
+
+    savings = round(product['original_price'] - product['price']) if product['original_price'] else 0
+    discount_pct = round((savings / float(product['original_price'])) * 100) if product['original_price'] and float(product['original_price']) > 0 else 0
+    benefits = [b.strip() for b in (product['benefits'] or '').split(',') if b.strip()]
+    bestseller_ids = set(get_marketing_bestseller_ids(cur, limit=24))
+    is_bestseller = bool(product.get('featured')) or product_id in bestseller_ids
+
+    image_url = None
+    if product.get('image') and product['image'] != 'default.jpg':
+        image_url = url_for('static', filename='uploads/products/' + product['image'])
+
+    db.close()
+
+    return jsonify({
+        'success': True,
+        'product': {
+            'id': product['id'],
+            'name': product['name'],
+            'category': product['category'],
+            'description': product['description'] or '',
+            'price': float(product['price']) if product['price'] is not None else 0,
+            'original_price': float(product['original_price']) if product['original_price'] is not None else None,
+            'rating': float(product['rating']) if product['rating'] is not None else 0,
+            'reviews_count': int(product['reviews_count'] or 0),
+            'sold_count': int(sold_count or 0),
+            'savings': int(savings),
+            'discount_pct': int(discount_pct),
+            'benefits': benefits,
+            'featured': bool(product.get('featured')),
+            'is_bestseller': bool(is_bestseller),
+            'image_url': image_url,
+            'product_url': url_for('product_details', product_id=product['id'])
+        }
+    })
 
 
 # ---------- Submit Review ----------
@@ -586,6 +914,16 @@ def feedback():
                            review_avg=review_avg)
 
 
+# ---------- Crafting Beauty ----------
+@app.route('/crafting-beauty')
+def crafting_beauty():
+    # Update this path after uploading your production video.
+    video_filename = 'uploads/crafting-beauty.mp4'
+    return render_template('crafting_beauty.html',
+                           page_title='Crafting Beauty',
+                           video_filename=video_filename)
+
+
 # ---------- Contact ----------
 @app.route('/contact', methods=['GET', 'POST'])
 def contact():
@@ -660,6 +998,7 @@ def register():
         email = request.form.get('email', '').strip()
         phone = request.form.get('phone', '').strip()
         age = request.form.get('age', '').strip()
+        dob = request.form.get('dob', '').strip()
         gender = request.form.get('gender', '').strip()
         address = request.form.get('address', '').strip()
         state = request.form.get('state', '').strip()
@@ -672,6 +1011,7 @@ def register():
             'email': email,
             'phone': phone,
             'age': age,
+            'dob': dob,
             'gender': gender,
             'address': address,
             'state': state,
@@ -681,13 +1021,28 @@ def register():
         phone_digits = ''.join(ch for ch in phone if ch.isdigit())
         stored_phone = phone_digits if phone_digits else phone
 
-        if not name or not email or not phone or not state or not district or not password:
-            error = 'Name, email, phone, state, district, and password are required.'
+        if not name or not email or not phone or not password:
+            error = 'Name, email, phone, and password are required.'
+        elif not age or not dob:
+            error = 'Age and date of birth are required.'
         elif len(password) < 6:
             error = 'Password must be at least 6 characters long.'
         elif password != confirm_password:
             error = 'Passwords do not match.'
         else:
+            try:
+                age_val = int(age)
+                if age_val < 1 or age_val > 120:
+                    raise ValueError
+            except ValueError:
+                error = 'Please enter a valid age between 1 and 120.'
+
+            try:
+                dob_val = datetime.strptime(dob, '%Y-%m-%d').date()
+            except ValueError:
+                error = 'Please provide a valid date of birth.'
+
+        if not error:
             db = get_db()
             cur = db.cursor()
             cur.execute("SELECT id FROM users WHERE email=%s", (email,))
@@ -704,17 +1059,18 @@ def register():
                 error = 'An account with this phone number already exists.'
             else:
                 cur.execute(
-                    """INSERT INTO users (name, email, phone, age, gender, address, state, district, pincode, password, role, status)
-                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'user', 'active')""",
+                    """INSERT INTO users (name, email, phone, age, dob, gender, address, state, district, pincode, password, role, status)
+                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'client', 'active')""",
                     (
                         name,
                         email,
                         stored_phone,
-                        int(age) if age else None,
+                        age_val,
+                        dob_val,
                         gender if gender in ('male', 'female', 'other') else None,
                         address or None,
-                        state,
-                        district,
+                        state or None,
+                        district or None,
                         pincode or None,
                         generate_password_hash(password),
                     )
@@ -738,7 +1094,7 @@ def login():
     if 'user_id' in session:
         if session.get('role') == 'admin':
             return redirect(url_for('admin_dashboard'))
-        return redirect(url_for('dashboard'))
+        return products()
 
     error = ''
     registered = request.args.get('registered')
@@ -775,7 +1131,7 @@ def login():
                     session['user_profile_image'] = user.get('profile_image', '') or ''
                     session.modified = True
                     flash(f'Welcome back, {user["name"]}!', 'success')
-                    return redirect(url_for('dashboard'))
+                    return products()
             else:
                 error = 'Invalid credentials.'
 
@@ -824,6 +1180,7 @@ def update_profile():
     name = request.form.get('name', '').strip()
     phone = request.form.get('phone', '').strip()
     age = request.form.get('age', '').strip()
+    dob = request.form.get('dob', '').strip()
     gender = request.form.get('gender', '').strip()
     address = request.form.get('address', '').strip()
     state = request.form.get('state', '').strip()
@@ -887,19 +1244,26 @@ def update_profile():
         return redirect(url_for('dashboard'))
 
     age_val = int(age) if age else None
+    try:
+        dob_val = datetime.strptime(dob, '%Y-%m-%d').date() if dob else None
+    except ValueError:
+        flash('Please enter a valid date of birth.', 'error')
+        db.close()
+        return redirect(url_for('dashboard'))
+
     gender_val = gender if gender in ('male', 'female', 'other') else None
 
     if profile_img_name:
         cur.execute(
-            """UPDATE users SET name=%s, phone=%s, age=%s, gender=%s, address=%s, state=%s, district=%s, pincode=%s, profile_image=%s
+            """UPDATE users SET name=%s, phone=%s, age=%s, dob=%s, gender=%s, address=%s, state=%s, district=%s, pincode=%s, profile_image=%s
                WHERE id=%s""",
-            (name, phone, age_val, gender_val, address or None, state or None, district or None, pincode or None, profile_img_name, session['user_id'])
+            (name, phone, age_val, dob_val, gender_val, address or None, state or None, district or None, pincode or None, profile_img_name, session['user_id'])
         )
     else:
         cur.execute(
-            """UPDATE users SET name=%s, phone=%s, age=%s, gender=%s, address=%s, state=%s, district=%s, pincode=%s
+            """UPDATE users SET name=%s, phone=%s, age=%s, dob=%s, gender=%s, address=%s, state=%s, district=%s, pincode=%s
                WHERE id=%s""",
-            (name, phone, age_val, gender_val, address or None, state or None, district or None, pincode or None, session['user_id'])
+            (name, phone, age_val, dob_val, gender_val, address or None, state or None, district or None, pincode or None, session['user_id'])
         )
     db.commit()
 
@@ -1739,6 +2103,21 @@ def checkout():
     cur.execute("SELECT * FROM users WHERE id=%s", (session['user_id'],))
     user = cur.fetchone()
 
+    def render_checkout_page():
+        checkout_payload = build_razorpay_checkout_data(total, user)
+        return render_template('checkout.html',
+                               page_title='Checkout',
+                               cart_items=cart_items,
+                               subtotal=subtotal,
+                               shipping=shipping,
+                               total=total,
+                               user=user,
+                               razorpay_checkout=checkout_payload,
+                               razorpay_enabled=bool(checkout_payload))
+
+    razorpay_checkout = build_razorpay_checkout_data(total, user)
+    razorpay_enabled = bool(razorpay_checkout)
+
     if request.method == 'POST':
         shipping_name = request.form.get('shipping_name', '').strip()
         shipping_phone = request.form.get('shipping_phone', '').strip()
@@ -1753,6 +2132,7 @@ def checkout():
         # Collect payment metadata for operational clarity in admin/order emails.
         payment_method_map = {
             'cod': 'Cash on Delivery',
+            'razorpay': 'Razorpay (Online)',
             'upi': 'UPI Payment',
             'card': 'Card Payment',
             'net_banking': 'Net Banking',
@@ -1761,8 +2141,68 @@ def checkout():
         if payment_method not in payment_method_map:
             payment_method = 'cod'
 
+        gateway_order_id = None
+        gateway_payment_id = None
+        gateway_signature = None
+        payment_status_for_order = 'pending'
+
         payment_details = []
-        if payment_method == 'upi':
+        if payment_method == 'razorpay':
+            razorpay_order_id = request.form.get('razorpay_order_id', '').strip()
+            razorpay_payment_id = request.form.get('razorpay_payment_id', '').strip()
+            razorpay_signature = request.form.get('razorpay_signature', '').strip()
+
+            if not razorpay_enabled:
+                db.close()
+                flash('Online payment is currently unavailable. Please choose another payment method.', 'error')
+                return render_checkout_page()
+
+            if not razorpay_order_id or not razorpay_payment_id or not razorpay_signature:
+                db.close()
+                flash('Payment was not completed. Please try paying again.', 'error')
+                return render_checkout_page()
+
+            razorpay_client = get_razorpay_client()
+            if razorpay_client is None:
+                db.close()
+                flash('Online payment setup is incomplete. Please contact support.', 'error')
+                return render_checkout_page()
+
+            try:
+                razorpay_client.utility.verify_payment_signature({
+                    'razorpay_order_id': razorpay_order_id,
+                    'razorpay_payment_id': razorpay_payment_id,
+                    'razorpay_signature': razorpay_signature,
+                })
+                payment_info = razorpay_client.payment.fetch(razorpay_payment_id)
+            except Exception as e:
+                app.logger.warning(f'Razorpay verification failed: {e}')
+                db.close()
+                flash('Payment verification failed. If amount was debited, contact support with payment ID.', 'error')
+                return render_checkout_page()
+
+            expected_amount = int(round(float(total) * 100))
+            expected_currency = (app.config.get('RAZORPAY_CURRENCY') or 'INR').strip().upper() or 'INR'
+            payment_amount = int(payment_info.get('amount') or 0)
+            payment_currency = (payment_info.get('currency') or '').upper()
+            payment_status = (payment_info.get('status') or '').lower()
+            payment_order_id = payment_info.get('order_id')
+
+            if payment_order_id != razorpay_order_id or payment_amount != expected_amount or payment_currency != expected_currency or payment_status not in ['captured', 'authorized']:
+                db.close()
+                flash('Payment details did not match order total. Please try again.', 'error')
+                return render_checkout_page()
+
+            gateway_order_id = razorpay_order_id
+            gateway_payment_id = razorpay_payment_id
+            gateway_signature = razorpay_signature
+            payment_status_for_order = 'paid'
+
+            payment_details.append(f'Gateway: Razorpay')
+            payment_details.append(f'Razorpay Order ID: {razorpay_order_id}')
+            payment_details.append(f'Razorpay Payment ID: {razorpay_payment_id}')
+            payment_details.append(f'Razorpay Status: {payment_status}')
+        elif payment_method == 'upi':
             upi_app = request.form.get('upi_app', '').strip()
             upi_id = request.form.get('upi_id', '').strip()
             if upi_app:
@@ -1806,25 +2246,26 @@ def checkout():
         if not shipping_name or not shipping_phone or not shipping_address or not shipping_state or not shipping_district or not shipping_pincode:
             db.close()
             flash('Please fill in all required shipping fields.', 'error')
-            return render_template('checkout.html',
-                                   page_title='Checkout',
-                                   cart_items=cart_items,
-                                   subtotal=subtotal,
-                                   shipping=shipping,
-                                   total=total,
-                                   user=user)
+            return render_checkout_page()
 
         # Generate unique order number
         order_number = generate_order_number()
 
         # Create order
+        paid_at_value = datetime.now() if payment_status_for_order == 'paid' else None
+
         cur.execute("""INSERT INTO orders (user_id, order_number, total_amount, shipping_name,
                                              shipping_phone, shipping_email, shipping_address, shipping_state,
-                                             shipping_district, shipping_pincode, payment_method, notes)
-                                             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+                                             shipping_district, shipping_pincode, payment_method,
+                                             payment_gateway_order_id, payment_gateway_payment_id,
+                                             payment_gateway_signature, payment_status, paid_at, notes)
+                                             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
                     (session['user_id'], order_number, total, shipping_name, shipping_phone,
                                          shipping_email or None, shipping_address, shipping_state,
-                                         shipping_district, shipping_pincode, payment_method, full_notes or None))
+                                         shipping_district, shipping_pincode, payment_method,
+                                         gateway_order_id, gateway_payment_id,
+                                         gateway_signature, payment_status_for_order,
+                                         paid_at_value, full_notes or None))
         order_id = cur.lastrowid
 
         # Create order items
@@ -1878,7 +2319,87 @@ Items:
                            subtotal=subtotal,
                            shipping=shipping,
                            total=total,
-                           user=user)
+                           user=user,
+                           razorpay_checkout=razorpay_checkout,
+                           razorpay_enabled=razorpay_enabled)
+
+
+@app.route('/webhooks/razorpay', methods=['POST'])
+def razorpay_webhook():
+    """Receive and verify Razorpay webhooks, then update order payment status."""
+    payload = request.get_data()
+    signature = request.headers.get('X-Razorpay-Signature', '')
+
+    if not verify_razorpay_webhook_signature(payload, signature):
+        return jsonify({'success': False, 'message': 'Invalid webhook signature'}), 400
+
+    event = request.json or {}
+    event_type = event.get('event', '')
+    payment_entity = ((event.get('payload') or {}).get('payment') or {}).get('entity') or {}
+
+    gateway_payment_id = (payment_entity.get('id') or '').strip()
+    gateway_order_id = (payment_entity.get('order_id') or '').strip()
+    gateway_status = (payment_entity.get('status') or '').strip().lower()
+
+    if not gateway_payment_id and not gateway_order_id:
+        return jsonify({'success': True, 'message': 'No relevant payment identifiers'}), 200
+
+    if event_type in ['payment.captured', 'payment.authorized']:
+        mapped_status = 'paid'
+    elif event_type in ['payment.failed']:
+        mapped_status = 'failed'
+    elif event_type in ['refund.processed', 'refund.created']:
+        mapped_status = 'refunded'
+    else:
+        mapped_status = 'pending'
+
+    db = None
+    try:
+        db = get_db()
+        cur = db.cursor()
+
+        if gateway_payment_id:
+            cur.execute(
+                """UPDATE orders
+                   SET payment_gateway_order_id = COALESCE(payment_gateway_order_id, %s),
+                       payment_gateway_payment_id = %s,
+                       payment_status = %s,
+                       paid_at = CASE WHEN %s='paid' AND paid_at IS NULL THEN NOW() ELSE paid_at END
+                   WHERE payment_gateway_payment_id = %s OR payment_gateway_order_id = %s""",
+                (gateway_order_id or None, gateway_payment_id, mapped_status, mapped_status, gateway_payment_id, gateway_order_id or None),
+            )
+        else:
+            cur.execute(
+                """UPDATE orders
+                   SET payment_status = %s,
+                       paid_at = CASE WHEN %s='paid' AND paid_at IS NULL THEN NOW() ELSE paid_at END
+                   WHERE payment_gateway_order_id = %s""",
+                (mapped_status, mapped_status, gateway_order_id),
+            )
+
+        if cur.rowcount == 0 and gateway_order_id:
+            cur.execute(
+                """UPDATE orders
+                   SET payment_gateway_order_id = %s,
+                       payment_gateway_payment_id = COALESCE(%s, payment_gateway_payment_id),
+                       payment_status = %s,
+                       paid_at = CASE WHEN %s='paid' AND paid_at IS NULL THEN NOW() ELSE paid_at END
+                   WHERE notes LIKE %s""",
+                (gateway_order_id, gateway_payment_id or None, mapped_status, mapped_status, f"%{gateway_order_id}%"),
+            )
+
+        db.commit()
+    except Exception as e:
+        if db:
+            db.rollback()
+        app.logger.error(f'Razorpay webhook processing failed: {e}')
+        return jsonify({'success': False, 'message': 'Webhook processing error'}), 500
+    finally:
+        if db:
+            db.close()
+
+    app.logger.info(f'Razorpay webhook processed: event={event_type}, payment_id={gateway_payment_id}, order_id={gateway_order_id}, status={gateway_status}')
+    return jsonify({'success': True}), 200
 
 
 # ---------- Order Confirmation ----------
